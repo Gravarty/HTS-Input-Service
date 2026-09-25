@@ -1,0 +1,92 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:2:1-59:12
+INJECTED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:2:1-59:12
+	package
+		INJECTED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml
+	xmlns:android
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:2:11-69
+uses-feature#android.software.live_tv
+ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:4:5-6:35
+	android:required
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:6:9-32
+	android:name
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:5:9-48
+application
+ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:8:5-57:19
+activity#com.gravarty.htsp.tvinput.HtspSetupActivity
+ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:9:9-17:20
+	android:label
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:12:13-52
+	android:exported
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:11:13-36
+	android:theme
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:13:13-54
+	android:name
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:10:13-46
+intent-filter#action:name:android.intent.action.MAIN
+ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:14:13-16:29
+action#android.intent.action.MAIN
+ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:15:17-69
+	android:name
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:15:25-66
+activity#com.gravarty.htsp.tvinput.HtspSettingsActivity
+ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:19:9-23:56
+	android:label
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:22:13-54
+	android:exported
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:21:13-36
+	android:theme
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:23:13-53
+	android:name
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:20:13-49
+activity#com.gravarty.htsp.tvinput.HtspLoginActivity
+ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:25:9-29:59
+	android:label
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:28:13-45
+	android:exported
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:27:13-37
+	android:theme
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:29:13-56
+	android:name
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:26:13-46
+service#com.gravarty.htsp.tvinput.HtspTvInputService
+ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:31:9-42:19
+	android:label
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:35:13-43
+	android:exported
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:34:13-36
+	android:permission
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:33:13-66
+	android:name
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:32:13-47
+intent-filter#action:name:android.media.tv.TvInputService
+ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:36:13-38:29
+action#android.media.tv.TvInputService
+ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:37:17-74
+	android:name
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:37:25-71
+meta-data#android.media.tv.input
+ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:39:13-41:60
+	android:resource
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:41:17-57
+	android:name
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:40:17-54
+service#com.gravarty.htsp.tvinput.HtspRadioInputService
+ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:45:9-56:19
+	android:label
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:49:13-38
+	android:exported
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:48:13-36
+	android:permission
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:47:13-66
+	android:name
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:46:13-50
+uses-sdk
+INJECTED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml
+INJECTED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml

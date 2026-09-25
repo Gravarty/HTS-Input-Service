@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Setup / settings strings taken from the old htsptvinput project -->
+<resources>
+    <string name="account_add_successful">Konto hinzugefügt.</string>
+    <string name="account_failed_error">Konto konnte nicht hinzugefügt werden: %s</string>
+    <string name="account_name">Tvheadend-Konto</string>
+    <string name="account_name_body">Benutzername und Passwort des Tvheadend-Benutzers eingeben.</string>
+    <string name="account_password">Passwort</string>
+    <string name="account_password_invalid">Ungültiges Passwort</string>
+    <string name="account_username">Benutzername</string>
+    <string name="account_username_invalid">Ungültiger Benutzername</string>
+    <string name="server_htsp_port">HTSP-Port</string>
+    <string name="server_htsp_port_invalid">Ungültiger Port</string>
+    <string name="server_ip">Hostname oder IP-Adresse</string>
+    <string name="server_ip_invalid">Ungültiger Hostname oder ungültige IP-Adresse</string>
+    <string name="server_name">Tvheadend-Server</string>
+    <string name="server_name_body">Hostname oder IP-Adresse des Tvheadend-Servers eingeben.</string>
+    <string name="setup_complete_action_title">Fertig</string>
+    <string name="setup_account_complete_body">Die Einrichtung ist abgeschlossen.</string>
+    <string name="setup_account_finish">Fertig</string>
+    <string name="setup_begin_body">Einrichtung der Tvheadend-Sender starten</string>
+    <string name="setup_begin_title">Starten</string>
+    <string name="setup_complete_body">Weitere Programminformationen und Senderlogos werden im Hintergrund geladen.</string>
+    <string name="setup_complete_failed">Konto konnte nicht hinzugefügt werden</string>
+    <string name="setup_complete_title">Einrichtung abgeschlossen</string>
+    <string name="setup_continue">Weiter</string>
+    <string name="setup_failed_htsp">HTSP-Zugangsdaten konnten nicht überprüft werden</string>
+    <string name="setup_htsp_failed">Verbindung zum Tvheadend-Server fehlgeschlagen</string>
+    <string name="setup_intro_body">Mit diesem Assistenten werden die Sender des Tvheadend-Servers für Live Channels eingerichtet.</string>
+    <string name="setup_intro_title">Tvheadend einrichten</string>
+    <string name="setup_progress_body">Verbindung zum Server wird hergestellt…</string>
+    <string name="setup_progress_title">Konto wird überprüft</string>
+    <string name="setup_settings_body">Erweiterte Einstellungen</string>
+    <string name="setup_settings_title">Einstellungen</string>
+    <string name="pref_screen_title">HTS Einstellungen</string>
+    <string name="hts_setup_label">HTS Einrichtung</string>
+    <string name="pref_category_epg">Programmübersicht</string>
+    <string name="pref_epg_sync_title">Programmübersicht synchronisieren</string>
+    <string name="pref_epg_max_time_title">Zeitraum der Programmübersicht</string>
+    <string name="pref_epg_max_time_summary">Wie weit im Voraus Programminformationen geladen werden</string>
+    <string name="pref_category_advanced">Erweitert</string>
+    <string name="pref_profile_title">Streamingprofil</string>
+    <string name="pref_profile_summary">Tvheadend-Streamingprofil für die Wiedergabe</string>
+    <string name="pref_profile_current">Aktuelles Profil: %1$s</string>
+    <string name="pref_profile_loading">Profile werden vom Server geladen …</string>
+    <string name="pref_profile_unavailable">Profile konnten nicht vom Server geladen werden. Aktuelles Profil: %1$s</string>
+    <string name="setup_scan_step">Tvheadend einrichten · Schritt %1$d von 2</string>
+    <string name="setup_scan_title">Sender werden gesucht</string>
+    <string name="setup_scan_body">Die Senderliste wird vom Tvheadend-Server übertragen. Anschließend werden die Programminformationen geladen.</string>
+    <string name="setup_scan_found">Sender gefunden</string>
+    <string name="setup_scan_status_channels">Sender werden empfangen …</string>
+    <string name="setup_epg_title">Programminformationen werden geladen</string>
+    <string name="setup_epg_body">Alle Sender wurden gefunden. Die Programminformationen werden jetzt geladen.</string>
+    <string name="setup_epg_status">Dies kann einige Minuten dauern.</string>
+
+    <!-- Added for this project (not in htsptvinput) -->
+    <string name="setup_scan_failed">Der Sendersuchlauf ist fehlgeschlagen. Siehe logcat.</string>
+    <string name="setup_retry">Erneut versuchen</string>
+    <string name="server_http_port">HTTP-Port</string>
+    <string name="server_http_port_invalid">Ungültiger Port</string>
+    <string name="pref_channels_tv_title">TV-Sender</string>
+    <string name="pref_channels_radio_title">Radio-Sender</string>
+    <string name="pref_channels_loading">Sender werden gezählt …</string>
+    <string name="pref_channels_count">%1$d Sender</string>
+    <string name="pref_server_title">Tvheadend-Server</string>
+    <string name="pref_server_summary">Serveradresse und Anmeldung</string>
+
+    <string-array name="epg_max_time_names">
+        <item>1 Stunde</item>
+        <item>6 Stunden</item>
+        <item>12 Stunden</item>
+        <item>1 Tag</item>
+        <item>3 Tage</item>
+        <item>7 Tage</item>
+        <item>8 Tage</item>
+    </string-array>
+</resources>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Setup look taken from AOSP Live Channels (packages/apps/TV, common/res).
+  Copyright (C) 2015 The Android Open Source Project
+  Licensed under the Apache License, Version 2.0
+  -->
+<resources>
+    <color name="common_tv_background">#0288D1</color>
+    <color name="common_setup_action_background">#0374BF</color>
+    <color name="common_setup_done_container_background">#04549D</color>
+    <!-- packages/apps/TV res/values/colors.xml -->
+    <color name="setup_sub_actions_background">#4004549D</color>
+    <color name="common_setup_button_done_selected">#26FFFFFF</color>
+    <color name="common_setup_input_description">#EEEEEE</color>
+
+    <dimen name="setup_guidedactions_vertical_padding">12dp</dimen>
+    <item name="setup_guidedactions_width_weight" format="float" type="string">1</item>
+    <dimen name="setup_guidedactions_item_delimiter_padding">10dp</dimen>
+
+    <!-- packages/apps/TV res/values/styles.xml (TV.Dvr.Settings.GuidedButtonActionsListStyle) -->
+    <style name="Widget.Setup.GuidedButtonActionsListStyle" parent="Widget.Leanback.GuidedButtonActionsListStyle">
+        <item name="android:background">@color/common_setup_done_container_background</item>
+    </style>
+
+    <style name="Widget.Setup.GuidanceContainerStyle" parent="Widget.Leanback.GuidanceContainerStyle">
+        <item name="android:paddingStart">56dp</item>
+        <item name="android:paddingEnd">32dp</item>
+    </style>
+    <style name="Widget.Setup.GuidanceTitleStyle" parent="Widget.Leanback.GuidanceTitleStyle">
+        <item name="android:layout_alignParentStart">true</item>
+        <item name="android:layout_below">@id/guidance_breadcrumb</item>
+        <item name="android:layout_centerVertical">false</item>
+        <item name="android:layout_marginTop">4dp</item>
+        <item name="android:fontFamily">sans-serif-light</item>
+        <item name="android:gravity">start</item>
+        <item name="android:lineSpacingExtra">0sp</item>
+        <item name="android:lineSpacingMultiplier">1.13778</item>
+        <item name="android:textAlignment">viewStart</item>
+        <item name="android:textColor">#EEEEEE</item>
+        <item name="android:textSize">34sp</item>
+    </style>
+    <style name="Widget.Setup.GuidanceDescriptionStyle" parent="Widget.Leanback.GuidanceDescriptionStyle">
+        <item name="android:layout_alignParentStart">true</item>
+        <item name="android:layout_marginTop">4dp</item>
+        <item name="android:fontFamily">sans-serif-light</item>
+        <item name="android:gravity">start</item>
+        <item name="android:lineSpacingExtra">0sp</item>
+        <item name="android:lineSpacingMultiplier">1.465</item>
+        <item name="android:maxLines">10</item>
+        <item name="android:textAlignment">viewStart</item>
+        <item name="android:textColor">#CCEEEEEE</item>
+    </style>
+    <style name="Widget.Setup.GuidanceBreadcrumbStyle" parent="Widget.Leanback.GuidanceBreadcrumbStyle">
+        <item name="android:layout_alignParentStart">true</item>
+        <item name="android:layout_above">@null</item>
+        <item name="android:layout_marginTop">156dp</item>
+        <item name="android:fontFamily">sans-serif-condensed</item>
+        <item name="android:textAlignment">viewStart</item>
+        <item name="android:textColor">#B3EEEEEE</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+    <style name="Widget.Setup.GuidedActionItemContainerStyle" parent="Widget.Leanback.GuidedActionItemContainerStyle">
+        <item name="android:layout_height">64dp</item>
+        <item name="android:paddingBottom">@dimen/setup_guidedactions_vertical_padding</item>
+        <item name="android:paddingTop">@dimen/setup_guidedactions_vertical_padding</item>
+        <item name="android:transitionGroup">true</item>
+    </style>
+    <style name="Widget.Setup.GuidedActionItemCheckmarkStyle" parent="Widget.Leanback.GuidedActionItemCheckmarkStyle">
+        <item name="android:visibility">gone</item>
+    </style>
+    <style name="Widget.Setup.GuidedActionItemIconStyle" parent="Widget.Leanback.GuidedActionItemIconStyle">
+        <item name="android:layout_marginEnd">@dimen/setup_guidedactions_item_delimiter_padding</item>
+    </style>
+    <style name="Widget.Setup.GuidedActionItemTitleStyle" parent="Widget.Leanback.GuidedActionItemTitleStyle">
+        <item name="android:layout_height">18dp</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textColor">#EEEEEE</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+    <style name="Widget.Setup.GuidedActionItemDescriptionStyle" parent="Widget.Leanback.GuidedActionItemDescriptionStyle">
+        <item name="android:layout_height">17dp</item>
+        <item name="android:alpha">0.5</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textColor">@color/common_setup_input_description</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+</resources>

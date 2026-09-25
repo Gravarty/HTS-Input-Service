@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Taken from the old htsptvinput project (styles.xml): wizard + preference themes only -->
+<resources>
+    <!-- Same look as the AOSP Live Channels setup (Theme.Setup.GuidedStep) -->
+    <style name="Theme.Wizard" parent="Theme.Leanback.GuidedStep">
+        <item name="android:windowBackground">@color/common_tv_background</item>
+        <item name="android:windowEnterTransition">@null</item>
+        <item name="guidanceBreadcrumbStyle">@style/Widget.Setup.GuidanceBreadcrumbStyle</item>
+        <item name="guidanceContainerStyle">@style/Widget.Setup.GuidanceContainerStyle</item>
+        <item name="guidanceDescriptionStyle">@style/Widget.Setup.GuidanceDescriptionStyle</item>
+        <item name="guidanceTitleStyle">@style/Widget.Setup.GuidanceTitleStyle</item>
+        <item name="guidedActionContentWidthWeight">@string/setup_guidedactions_width_weight</item>
+        <item name="guidedActionItemContainerStyle">@style/Widget.Setup.GuidedActionItemContainerStyle</item>
+        <item name="guidedActionItemCheckmarkStyle">@style/Widget.Setup.GuidedActionItemCheckmarkStyle</item>
+        <item name="guidedActionItemIconStyle">@style/Widget.Setup.GuidedActionItemIconStyle</item>
+        <item name="guidedActionItemTitleStyle">@style/Widget.Setup.GuidedActionItemTitleStyle</item>
+        <item name="guidedActionItemDescriptionStyle">@style/Widget.Setup.GuidedActionItemDescriptionStyle</item>
+        <item name="guidedActionsBackground">@color/common_setup_action_background</item>
+        <item name="guidedActionsElevation">0dp</item>
+        <item name="guidedActionsSelectorDrawable">@drawable/setup_selector_background</item>
+        <item name="guidedStepBackground">@android:color/transparent</item>
+        <!-- Button column ("Weiter" / "Fertig"): AOSP Live Channels colours from
+             Theme.TV.Dvr.Settings.GuidedStep instead of the grey Leanback default -->
+        <item name="guidedActionsBackgroundDark">@color/setup_sub_actions_background</item>
+        <item name="guidedButtonActionsListStyle">@style/Widget.Setup.GuidedButtonActionsListStyle</item>
+    </style>
+
+    <style name="Theme.Wizard.Setup" />
+
+    <style name="Theme.Wizard.Setup.NoSelector">
+        <item name="guidedActionsSelectorDrawable">@null</item>
+    </style>
+
+    <style name="Theme.Wizard.Account" />
+
+    <style name="Theme.Wizard.Account.NoSelector">
+        <item name="guidedActionsSelectorDrawable">@null</item>
+    </style>
+
+    <style name="Theme.Preferences" parent="Theme.Leanback">
+        <item name="preferenceTheme">@style/PreferenceThemeOverlayLeanback</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowNoTitle">true</item>
+        <!--<item name="android:windowIsFloating">true</item>-->
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
+</resources>

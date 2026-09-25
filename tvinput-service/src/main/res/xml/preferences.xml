@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- From the old htsptvinput preferences.xml: only the EPG and profile entries,
+     plus "Tvheadend-Server" on top (opens the login). -->
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:title="@string/pref_screen_title">
+
+    <Preference
+        android:key="channel_count_tv"
+        android:title="@string/pref_channels_tv_title"
+        android:summary="@string/pref_channels_loading"
+        android:selectable="false" />
+
+    <Preference
+        android:key="channel_count_radio"
+        android:title="@string/pref_channels_radio_title"
+        android:summary="@string/pref_channels_loading"
+        android:selectable="false" />
+
+    <Preference
+        android:key="server"
+        android:title="@string/pref_server_title"
+        android:summary="@string/pref_server_summary" />
+
+    <PreferenceCategory android:title="@string/pref_category_epg">
+        <CheckBoxPreference
+            android:key="enable_epg"
+            android:title="@string/pref_epg_sync_title"
+            android:defaultValue="@bool/pref_default_epg_sync_enabled" />
+        <ListPreference
+            android:key="epg_max_time"
+            android:title="@string/pref_epg_max_time_title"
+            android:dialogTitle="@string/pref_epg_max_time_title"
+            android:entries="@array/epg_max_time_names"
+            android:entryValues="@array/epg_max_time_values"
+            android:defaultValue="@string/pref_default_epg_max_time"
+            android:summary="@string/pref_epg_max_time_summary"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_category_advanced">
+        <!-- Entries are loaded from the server (HTSP getProfiles), see HtspSettingsActivity -->
+        <ListPreference
+            android:key="profile"
+            android:title="@string/pref_profile_title"
+            android:dialogTitle="@string/pref_profile_title"
+            android:summary="@string/pref_profile_summary"
+            android:defaultValue="@string/pref_default_htsp_stream_profile" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

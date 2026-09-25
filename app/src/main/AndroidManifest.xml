@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="com.android.providers.tv.permission.READ_EPG_DATA" />
+    <uses-permission android:name="com.android.providers.tv.permission.WRITE_EPG_DATA" />
+
+    <uses-feature
+        android:name="android.software.leanback"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.type.television"
+        android:required="false" />
+    <uses-feature
+        android:name="android.software.live_tv"
+        android:required="true" />
+
+    <application
+        android:allowBackup="true"
+        android:banner="@drawable/banner"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_tv_service"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
+        android:theme="@style/Theme.AppCompat.NoActionBar">
+
+        <activity
+            android:name="com.gravarty.htsp.tvinput.HtspSetupActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:label="@string/hts_setup_label"
+            android:theme="@style/Theme.Wizard.Setup">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="com.gravarty.htsp.tvinput.HtspSettingsActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.Preferences"
+            tools:replace="android:label">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="com.gravarty.htsp.tvinput.HtspLoginActivity"
+            android:exported="false"
+            android:label="Tvheadend-Server"
+            android:theme="@style/Theme.Wizard.Account" />
+
+        <service
+            android:name="com.gravarty.htsp.tvinput.HtspTvInputService"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.BIND_TV_INPUT"
+            android:label="HTS Television">
+            <intent-filter>
+                <action android:name="android.media.tv.TvInputService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.media.tv.input"
+                android:resource="@xml/tv_input_service" />
+        </service>
+
+    </application>
+
+</manifest>

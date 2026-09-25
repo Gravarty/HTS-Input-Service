@@ -1,0 +1,9 @@
+com.gravarty.htsp.tvinput.tvinput-service-pngs-0 /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/build/generated/res/pngs/debug
+com.gravarty.htsp.tvinput.tvinput-service-updated_navigation_xml-1 /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/build/generated/updated_navigation_xml/debug
+com.gravarty.htsp.tvinput.tvinput-service-mergeDebugResources-2 /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/build/intermediates/incremental/debug/mergeDebugResources/merged.dir
+com.gravarty.htsp.tvinput.tvinput-service-mergeDebugResources-3 /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/build/intermediates/incremental/debug/mergeDebugResources/stripped.dir
+com.gravarty.htsp.tvinput.tvinput-service-debug-4 /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/build/intermediates/merged_res/debug/mergeDebugResources
+com.gravarty.htsp.tvinput.tvinput-service-debug-5 /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/build/intermediates/packaged_res/debug/packageDebugResources
+com.gravarty.htsp.tvinput.tvinput-service-debug-6 /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/debug/res
+com.gravarty.htsp.tvinput.tvinput-service-main-7 /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/res
+gradleHome-0 /Users/dennis/.gradle
