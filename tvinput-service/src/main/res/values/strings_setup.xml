@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Setup / settings strings taken from the old htsptvinput project -->
+<resources>
+    <string name="account_add_successful">Account added.</string>
+    <string name="account_failed_error">Could not add account: %s</string>
+    <string name="account_name">Tvheadend account</string>
+    <string name="account_name_body">Enter the username and password of your Tvheadend user.</string>
+    <string name="account_password">Password</string>
+    <string name="account_password_invalid">Invalid password</string>
+    <string name="account_username">Username</string>
+    <string name="account_username_invalid">Invalid username</string>
+    <string name="server_htsp_port">HTSP port</string>
+    <string name="server_htsp_port_invalid">Invalid port</string>
+    <string name="server_ip">Hostname or IP address</string>
+    <string name="server_ip_invalid">Invalid hostname or IP address</string>
+    <string name="server_name">Tvheadend server</string>
+    <string name="server_name_body">Enter the hostname or IP address of your Tvheadend server.</string>
+    <string name="setup_complete_action_title">Done</string>
+    <string name="setup_account_complete_body">Setup is complete.</string>
+    <string name="setup_account_finish">Done</string>
+    <string name="setup_begin_body">Start setting up your Tvheadend channels</string>
+    <string name="setup_begin_title">Start</string>
+    <string name="setup_complete_body">Additional program information and channel logos will continue loading in the background.</string>
+    <string name="setup_complete_failed">Could not add account</string>
+    <string name="setup_complete_title">Setup complete</string>
+    <string name="setup_continue">Next</string>
+    <string name="setup_failed_htsp">Could not verify the HTSP credentials</string>
+    <string name="setup_htsp_failed">Could not connect to the Tvheadend server</string>
+    <string name="setup_intro_body">This assistant sets up the channels of your Tvheadend server for Live Channels.</string>
+    <string name="setup_intro_title">Set up Tvheadend</string>
+    <string name="setup_progress_body">Connecting to the server…</string>
+    <string name="setup_progress_title">Verifying account</string>
+    <string name="setup_settings_body">Advanced settings</string>
+    <string name="setup_settings_title">Settings</string>
+    <string name="pref_screen_title">HTS Settings</string>
+    <string name="hts_setup_label">HTS Setup</string>
+    <string name="pref_category_epg">Program guide</string>
+    <string name="pref_epg_sync_title">Sync program guide</string>
+    <string name="pref_epg_max_time_title">Program guide range</string>
+    <string name="pref_epg_max_time_summary">How far in advance program information is loaded</string>
+    <string name="pref_category_advanced">Advanced</string>
+    <string name="pref_profile_title">Stream profile</string>
+    <string name="pref_profile_summary">Tvheadend stream profile used for playback</string>
+    <string name="pref_profile_current">Current profile: %1$s</string>
+    <string name="pref_profile_loading">Loading profiles from the server…</string>
+    <string name="pref_profile_unavailable">Profiles could not be loaded from the server. Current profile: %1$s</string>
+    <string name="setup_scan_step">Set up Tvheadend · Step %1$d of 2</string>
+    <string name="setup_scan_title">Searching for channels</string>
+    <string name="setup_scan_body">The channel list is being transferred from the Tvheadend server. Program information is loaded afterwards.</string>
+    <string name="setup_scan_found">channels found</string>
+    <string name="setup_scan_status_channels">Receiving channels…</string>
+    <string name="setup_epg_title">Loading program information</string>
+    <string name="setup_epg_body">All channels have been found. Program information is now being loaded.</string>
+    <string name="setup_epg_status">This may take a few minutes.</string>
+
+    <!-- Added for this project (not in htsptvinput) -->
+    <string name="account_label" translatable="false">Tvheadend</string>
+    <string name="setup_scan_failed">The channel scan failed. See logcat.</string>
+    <string name="setup_retry">Try again</string>
+    <string name="server_http_port">HTTP port</string>
+    <string name="server_http_port_invalid">Invalid port</string>
+    <string name="pref_channels_tv_title">TV channels</string>
+    <string name="pref_channels_radio_title">Radio channels</string>
+    <string name="pref_channels_loading">Counting channels…</string>
+    <string name="pref_channels_count">%1$d channels</string>
+    <string name="pref_server_title">Tvheadend server</string>
+    <string name="pref_server_summary">Server address and login</string>
+
+    <string-array name="epg_max_time_names">
+        <item>1 hour</item>
+        <item>6 hours</item>
+        <item>12 hours</item>
+        <item>1 day</item>
+        <item>3 days</item>
+        <item>7 days</item>
+        <item>8 days</item>
+    </string-array>
+</resources>

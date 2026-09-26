@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Server login (incl. password) is not backed up -->
+    <exclude domain="sharedpref" path="htsp_settings.xml"/>
+</full-backup-content>

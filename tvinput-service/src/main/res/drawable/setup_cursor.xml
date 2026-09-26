@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Visible text cursor for the setup wizard's edit fields (IP, ports, username, password). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="#EEEEEE" />
+    <size android:width="2dp" />
+</shape>

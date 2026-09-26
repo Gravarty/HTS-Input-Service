@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-feature
+        android:name="android.software.live_tv"
+        android:required="true" />
+
+    <application>
+        <activity
+            android:name=".HtspSetupActivity"
+            android:exported="true"
+            android:label="@string/hts_setup_label"
+            android:theme="@style/Theme.Wizard.Setup">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".HtspSettingsActivity"
+            android:exported="true"
+            android:label="@string/pref_screen_title"
+            android:theme="@style/Theme.Preferences" />
+
+        <activity
+            android:name=".HtspLoginActivity"
+            android:exported="false"
+            android:label="Tvheadend-Server"
+            android:theme="@style/Theme.Wizard.Account" />
+
+        <service
+            android:name=".HtspTvInputService"
+            android:permission="android.permission.BIND_TV_INPUT"
+            android:exported="true"
+            android:label="HTS Television">
+            <intent-filter>
+                <action android:name="android.media.tv.TvInputService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.media.tv.input"
+                android:resource="@xml/tv_input_service" />
+        </service>
+
+        <!-- Radio channels as their own input (pvr.hts CHANNEL_TYPE_RADIO) -->
+        <service
+            android:name=".HtspRadioInputService"
+            android:permission="android.permission.BIND_TV_INPUT"
+            android:exported="true"
+            android:label="HTS Radio">
+            <intent-filter>
+                <action android:name="android.media.tv.TvInputService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.media.tv.input"
+                android:resource="@xml/tv_input_service" />
+        </service>
+    </application>
+
+</manifest>

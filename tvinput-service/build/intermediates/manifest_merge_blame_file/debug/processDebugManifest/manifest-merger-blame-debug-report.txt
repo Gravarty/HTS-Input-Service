@@ -1,0 +1,108 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.gravarty.htsp.tvinput" >
+4
+5    <uses-sdk android:minSdkVersion="26" />
+5-->INJECTED
+5-->INJECTED
+6
+7    <uses-feature
+7-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:4:5-6:35
+8        android:name="android.software.live_tv"
+8-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:5:9-48
+9        android:required="true" />
+9-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:6:9-32
+10
+11    <application>
+11-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:8:5-57:19
+12        <activity
+12-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:9:9-17:20
+13            android:name="com.gravarty.htsp.tvinput.HtspSetupActivity"
+13-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:10:13-46
+14            android:exported="true"
+14-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:11:13-36
+15            android:label="@string/hts_setup_label"
+15-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:12:13-52
+16            android:theme="@style/Theme.Wizard.Setup" >
+16-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:13:13-54
+17            <intent-filter>
+17-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:14:13-16:29
+18                <action android:name="android.intent.action.MAIN" />
+18-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:15:17-69
+18-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:15:25-66
+19            </intent-filter>
+20        </activity>
+21        <activity
+21-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:19:9-23:56
+22            android:name="com.gravarty.htsp.tvinput.HtspSettingsActivity"
+22-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:20:13-49
+23            android:exported="true"
+23-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:21:13-36
+24            android:label="@string/pref_screen_title"
+24-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:22:13-54
+25            android:theme="@style/Theme.Preferences" />
+25-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:23:13-53
+26        <activity
+26-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:25:9-29:59
+27            android:name="com.gravarty.htsp.tvinput.HtspLoginActivity"
+27-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:26:13-46
+28            android:exported="false"
+28-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:27:13-37
+29            android:label="Tvheadend-Server"
+29-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:28:13-45
+30            android:theme="@style/Theme.Wizard.Account" />
+30-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:29:13-56
+31
+32        <service
+32-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:31:9-42:19
+33            android:name="com.gravarty.htsp.tvinput.HtspTvInputService"
+33-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:32:13-47
+34            android:exported="true"
+34-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:34:13-36
+35            android:label="HTS Television"
+35-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:35:13-43
+36            android:permission="android.permission.BIND_TV_INPUT" >
+36-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:33:13-66
+37            <intent-filter>
+37-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:36:13-38:29
+38                <action android:name="android.media.tv.TvInputService" />
+38-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:37:17-74
+38-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:37:25-71
+39            </intent-filter>
+40
+41            <meta-data
+41-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:39:13-41:60
+42                android:name="android.media.tv.input"
+42-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:40:17-54
+43                android:resource="@xml/tv_input_service" />
+43-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:41:17-57
+44        </service>
+45
+46        <!-- Radio channels as their own input (pvr.hts CHANNEL_TYPE_RADIO) -->
+47        <service
+47-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:45:9-56:19
+48            android:name="com.gravarty.htsp.tvinput.HtspRadioInputService"
+48-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:46:13-50
+49            android:exported="true"
+49-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:48:13-36
+50            android:label="HTS Radio"
+50-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:49:13-38
+51            android:permission="android.permission.BIND_TV_INPUT" >
+51-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:47:13-66
+52            <intent-filter>
+52-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:36:13-38:29
+53                <action android:name="android.media.tv.TvInputService" />
+53-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:37:17-74
+53-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:37:25-71
+54            </intent-filter>
+55
+56            <meta-data
+56-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:39:13-41:60
+57                android:name="android.media.tv.input"
+57-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:40:17-54
+58                android:resource="@xml/tv_input_service" />
+58-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:41:17-57
+59        </service>
+60    </application>
+61
+62</manifest>

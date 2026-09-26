@@ -1,0 +1,9 @@
+com.gravarty.htsp.provider.htsp-provider-pngs-0 /Users/dennis/Downloads/HTS-Input-Service/htsp-provider/build/generated/res/pngs/release
+com.gravarty.htsp.provider.htsp-provider-updated_navigation_xml-1 /Users/dennis/Downloads/HTS-Input-Service/htsp-provider/build/generated/updated_navigation_xml/release
+com.gravarty.htsp.provider.htsp-provider-mergeReleaseResources-2 /Users/dennis/Downloads/HTS-Input-Service/htsp-provider/build/intermediates/incremental/release/mergeReleaseResources/merged.dir
+com.gravarty.htsp.provider.htsp-provider-mergeReleaseResources-3 /Users/dennis/Downloads/HTS-Input-Service/htsp-provider/build/intermediates/incremental/release/mergeReleaseResources/stripped.dir
+com.gravarty.htsp.provider.htsp-provider-release-4 /Users/dennis/Downloads/HTS-Input-Service/htsp-provider/build/intermediates/merged_res/release/mergeReleaseResources
+com.gravarty.htsp.provider.htsp-provider-release-5 /Users/dennis/Downloads/HTS-Input-Service/htsp-provider/build/intermediates/packaged_res/release/packageReleaseResources
+com.gravarty.htsp.provider.htsp-provider-main-6 /Users/dennis/Downloads/HTS-Input-Service/htsp-provider/src/main/res
+com.gravarty.htsp.provider.htsp-provider-release-7 /Users/dennis/Downloads/HTS-Input-Service/htsp-provider/src/release/res
+gradleHome-0 /Users/dennis/.gradle

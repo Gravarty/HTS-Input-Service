@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Guidance for the channel scan: the standard Leanback guidance views (same ids and
+     theme styles as lb_guidance.xml) plus a channel counter, progress bar and status. -->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/guidance_container"
+    style="?attr/guidanceContainerStyle"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/guidance_icon"
+        style="?attr/guidanceIconStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:importantForAccessibility="no" />
+
+    <TextView
+        android:id="@+id/guidance_breadcrumb"
+        style="?attr/guidanceBreadcrumbStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/guidance_title"
+        style="?attr/guidanceTitleStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/guidance_description"
+        style="?attr/guidanceDescriptionStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/guidance_title" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/guidance_description"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="24dp"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:baselineAligned="true"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/scan_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-light"
+                android:text="0"
+                android:textColor="#EEEEEE"
+                android:textSize="48sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:fontFamily="sans-serif-light"
+                android:text="@string/setup_scan_found"
+                android:textColor="#CCEEEEEE"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <ProgressBar
+            android:id="@+id/scan_progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="316dp"
+            android:layout_height="4dp"
+            android:layout_marginTop="10dp"
+            android:indeterminate="true"
+            android:indeterminateTint="#EEEEEE"
+            android:indeterminateTintMode="src_in" />
+
+        <TextView
+            android:id="@+id/scan_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="sans-serif"
+            android:text="@string/setup_scan_status_channels"
+            android:textColor="#BFEEEEEE"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+</RelativeLayout>

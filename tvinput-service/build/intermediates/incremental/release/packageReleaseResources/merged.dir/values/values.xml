@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="epg_max_time_names">
+        <item>1 hour</item>
+        <item>6 hours</item>
+        <item>12 hours</item>
+        <item>1 day</item>
+        <item>3 days</item>
+        <item>7 days</item>
+        <item>8 days</item>
+    </string-array>
+    <string-array name="epg_max_time_values">
+        <item>3600</item>
+        <item>21600</item>
+        <item>43200</item>
+        <item>86400</item>
+        <item>259200</item>
+        <item>604800</item>
+        <item>691200</item>
+    </string-array>
+    <bool name="pref_default_epg_sync_enabled">true</bool>
+    <color name="common_setup_action_background">#0374BF</color>
+    <color name="common_setup_button_done_selected">#26FFFFFF</color>
+    <color name="common_setup_done_container_background">#04549D</color>
+    <color name="common_setup_input_description">#EEEEEE</color>
+    <color name="common_tv_background">#0288D1</color>
+    <color name="setup_sub_actions_background">#4004549D</color>
+    <dimen name="setup_guidedactions_item_delimiter_padding">10dp</dimen>
+    <dimen name="setup_guidedactions_vertical_padding">12dp</dimen>
+    <item name="tag_force_light_text_attached" type="id"/>
+    <string name="account_add_successful">Account added.</string>
+    <string name="account_failed_error">Could not add account: %s</string>
+    <string name="account_label" translatable="false">Tvheadend</string>
+    <string name="account_name">Tvheadend account</string>
+    <string name="account_name_body">Enter the username and password of your Tvheadend user.</string>
+    <string name="account_password">Password</string>
+    <string name="account_password_invalid">Invalid password</string>
+    <string name="account_username">Username</string>
+    <string name="account_username_invalid">Invalid username</string>
+    <string name="hts_setup_label">HTS Setup</string>
+    <string name="pref_category_advanced">Advanced</string>
+    <string name="pref_category_epg">Program guide</string>
+    <string name="pref_channels_count">%1$d channels</string>
+    <string name="pref_channels_loading">Counting channels…</string>
+    <string name="pref_channels_radio_title">Radio channels</string>
+    <string name="pref_channels_tv_title">TV channels</string>
+    <string name="pref_default_epg_max_time" translatable="false">259200</string>
+    <string name="pref_default_htsp_stream_profile" translatable="false">htsp</string>
+    <string name="pref_epg_max_time_summary">How far in advance program information is loaded</string>
+    <string name="pref_epg_max_time_title">Program guide range</string>
+    <string name="pref_epg_sync_title">Sync program guide</string>
+    <string name="pref_profile_current">Current profile: %1$s</string>
+    <string name="pref_profile_loading">Loading profiles from the server…</string>
+    <string name="pref_profile_summary">Tvheadend stream profile used for playback</string>
+    <string name="pref_profile_title">Stream profile</string>
+    <string name="pref_profile_unavailable">Profiles could not be loaded from the server. Current profile: %1$s</string>
+    <string name="pref_screen_title">HTS Settings</string>
+    <string name="pref_server_summary">Server address and login</string>
+    <string name="pref_server_title">Tvheadend server</string>
+    <string name="server_htsp_port">HTSP port</string>
+    <string name="server_htsp_port_invalid">Invalid port</string>
+    <string name="server_http_port">HTTP port</string>
+    <string name="server_http_port_invalid">Invalid port</string>
+    <string name="server_ip">Hostname or IP address</string>
+    <string name="server_ip_invalid">Invalid hostname or IP address</string>
+    <string name="server_name">Tvheadend server</string>
+    <string name="server_name_body">Enter the hostname or IP address of your Tvheadend server.</string>
+    <string name="setup_account_complete_body">Setup is complete.</string>
+    <string name="setup_account_finish">Done</string>
+    <string name="setup_begin_body">Start setting up your Tvheadend channels</string>
+    <string name="setup_begin_title">Start</string>
+    <string name="setup_complete_action_title">Done</string>
+    <string name="setup_complete_body">Additional program information and channel logos will continue loading in the background.</string>
+    <string name="setup_complete_failed">Could not add account</string>
+    <string name="setup_complete_title">Setup complete</string>
+    <string name="setup_continue">Next</string>
+    <string name="setup_epg_body">All channels have been found. Program information is now being loaded.</string>
+    <string name="setup_epg_status">This may take a few minutes.</string>
+    <string name="setup_epg_title">Loading program information</string>
+    <string name="setup_failed_htsp">Could not verify the HTSP credentials</string>
+    <item format="float" name="setup_guidedactions_width_weight" type="string">1</item>
+    <string name="setup_htsp_failed">Could not connect to the Tvheadend server</string>
+    <string name="setup_intro_body">This assistant sets up the channels of your Tvheadend server for Live Channels.</string>
+    <string name="setup_intro_title">Set up Tvheadend</string>
+    <string name="setup_progress_body">Connecting to the server…</string>
+    <string name="setup_progress_title">Verifying account</string>
+    <string name="setup_retry">Try again</string>
+    <string name="setup_scan_body">The channel list is being transferred from the Tvheadend server. Program information is loaded afterwards.</string>
+    <string name="setup_scan_failed">The channel scan failed. See logcat.</string>
+    <string name="setup_scan_found">channels found</string>
+    <string name="setup_scan_status_channels">Receiving channels…</string>
+    <string name="setup_scan_step">Set up Tvheadend · Step %1$d of 2</string>
+    <string name="setup_scan_title">Searching for channels</string>
+    <string name="setup_settings_body">Advanced settings</string>
+    <string name="setup_settings_title">Settings</string>
+    <style name="Theme.Preferences" parent="Theme.Leanback">
+        <item name="preferenceTheme">@style/PreferenceThemeOverlayLeanback</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowNoTitle">true</item>
+        
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
+    <style name="Theme.Wizard" parent="Theme.Leanback.GuidedStep">
+        <item name="android:windowBackground">@color/common_tv_background</item>
+        <item name="android:windowEnterTransition">@null</item>
+        <item name="guidanceBreadcrumbStyle">@style/Widget.Setup.GuidanceBreadcrumbStyle</item>
+        <item name="guidanceContainerStyle">@style/Widget.Setup.GuidanceContainerStyle</item>
+        <item name="guidanceDescriptionStyle">@style/Widget.Setup.GuidanceDescriptionStyle</item>
+        <item name="guidanceTitleStyle">@style/Widget.Setup.GuidanceTitleStyle</item>
+        <item name="guidedActionContentWidthWeight">@string/setup_guidedactions_width_weight</item>
+        <item name="guidedActionItemContainerStyle">@style/Widget.Setup.GuidedActionItemContainerStyle</item>
+        <item name="guidedActionItemCheckmarkStyle">@style/Widget.Setup.GuidedActionItemCheckmarkStyle</item>
+        <item name="guidedActionItemIconStyle">@style/Widget.Setup.GuidedActionItemIconStyle</item>
+        <item name="guidedActionItemTitleStyle">@style/Widget.Setup.GuidedActionItemTitleStyle</item>
+        <item name="guidedActionItemDescriptionStyle">@style/Widget.Setup.GuidedActionItemDescriptionStyle</item>
+        <item name="guidedActionsBackground">@color/common_setup_action_background</item>
+        <item name="guidedActionsElevation">0dp</item>
+        <item name="guidedActionsSelectorDrawable">@drawable/setup_selector_background</item>
+        <item name="guidedStepBackground">@android:color/transparent</item>
+        
+        <item name="guidedActionsBackgroundDark">@color/setup_sub_actions_background</item>
+        <item name="guidedButtonActionsListStyle">@style/Widget.Setup.GuidedButtonActionsListStyle</item>
+    </style>
+    <style name="Theme.Wizard.Account"/>
+    <style name="Theme.Wizard.Account.NoSelector">
+        <item name="guidedActionsSelectorDrawable">@null</item>
+    </style>
+    <style name="Theme.Wizard.Setup"/>
+    <style name="Theme.Wizard.Setup.NoSelector">
+        <item name="guidedActionsSelectorDrawable">@null</item>
+    </style>
+    <style name="Widget.Setup.GuidanceBreadcrumbStyle" parent="Widget.Leanback.GuidanceBreadcrumbStyle">
+        <item name="android:layout_alignParentStart">true</item>
+        <item name="android:layout_above">@null</item>
+        <item name="android:layout_marginTop">156dp</item>
+        <item name="android:fontFamily">sans-serif-condensed</item>
+        <item name="android:textAlignment">viewStart</item>
+        <item name="android:textColor">#B3EEEEEE</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+    <style name="Widget.Setup.GuidanceContainerStyle" parent="Widget.Leanback.GuidanceContainerStyle">
+        <item name="android:paddingStart">56dp</item>
+        <item name="android:paddingEnd">32dp</item>
+    </style>
+    <style name="Widget.Setup.GuidanceDescriptionStyle" parent="Widget.Leanback.GuidanceDescriptionStyle">
+        <item name="android:layout_alignParentStart">true</item>
+        <item name="android:layout_marginTop">4dp</item>
+        <item name="android:fontFamily">sans-serif-light</item>
+        <item name="android:gravity">start</item>
+        <item name="android:lineSpacingExtra">0sp</item>
+        <item name="android:lineSpacingMultiplier">1.465</item>
+        <item name="android:maxLines">10</item>
+        <item name="android:textAlignment">viewStart</item>
+        <item name="android:textColor">#CCEEEEEE</item>
+    </style>
+    <style name="Widget.Setup.GuidanceTitleStyle" parent="Widget.Leanback.GuidanceTitleStyle">
+        <item name="android:layout_alignParentStart">true</item>
+        <item name="android:layout_below">@id/guidance_breadcrumb</item>
+        <item name="android:layout_centerVertical">false</item>
+        <item name="android:layout_marginTop">4dp</item>
+        <item name="android:fontFamily">sans-serif-light</item>
+        <item name="android:gravity">start</item>
+        <item name="android:lineSpacingExtra">0sp</item>
+        <item name="android:lineSpacingMultiplier">1.13778</item>
+        <item name="android:textAlignment">viewStart</item>
+        <item name="android:textColor">#EEEEEE</item>
+        <item name="android:textSize">34sp</item>
+    </style>
+    <style name="Widget.Setup.GuidedActionItemCheckmarkStyle" parent="Widget.Leanback.GuidedActionItemCheckmarkStyle">
+        <item name="android:visibility">gone</item>
+    </style>
+    <style name="Widget.Setup.GuidedActionItemContainerStyle" parent="Widget.Leanback.GuidedActionItemContainerStyle">
+        <item name="android:minHeight">64dp</item>
+        <item name="android:paddingBottom">@dimen/setup_guidedactions_vertical_padding</item>
+        <item name="android:paddingTop">@dimen/setup_guidedactions_vertical_padding</item>
+        <item name="android:transitionGroup">true</item>
+    </style>
+    <style name="Widget.Setup.GuidedActionItemDescriptionStyle" parent="Widget.Leanback.GuidedActionItemDescriptionStyle">
+        <item name="android:alpha">0.5</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textColor">@color/common_setup_input_description</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+    <style name="Widget.Setup.GuidedActionItemIconStyle" parent="Widget.Leanback.GuidedActionItemIconStyle">
+        <item name="android:layout_marginEnd">@dimen/setup_guidedactions_item_delimiter_padding</item>
+    </style>
+    <style name="Widget.Setup.GuidedActionItemTitleStyle" parent="Widget.Leanback.GuidedActionItemTitleStyle">
+        <item name="android:layout_height">18dp</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textColor">#EEEEEE</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+    <style name="Widget.Setup.GuidedButtonActionsListStyle" parent="Widget.Leanback.GuidedButtonActionsListStyle">
+        <item name="android:background">@color/common_setup_done_container_background</item>
+    </style>
+</resources>
