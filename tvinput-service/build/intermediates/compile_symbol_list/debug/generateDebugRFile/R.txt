@@ -9,6 +9,7 @@ int color common_tv_background 0x0
 int color setup_sub_actions_background 0x0
 int dimen setup_guidedactions_item_delimiter_padding 0x0
 int dimen setup_guidedactions_vertical_padding 0x0
+int drawable setup_cursor 0x0
 int drawable setup_selector_background 0x0
 int id guidance_breadcrumb 0x0
 int id guidance_container 0x0
@@ -21,6 +22,7 @@ int id scan_count 0x0
 int id scan_progress 0x0
 int id scan_status 0x0
 int id settingsFragment 0x0
+int id tag_force_light_text_attached 0x0
 int layout fragment_settings 0x0
 int layout setup_progress 0x0
 int layout setup_scan_guidance 0x0

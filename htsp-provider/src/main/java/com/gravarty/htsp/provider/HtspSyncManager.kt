@@ -55,6 +55,7 @@ class HtspSyncManager(
             if (HtspLogoFetcher.fetchAndStoreLogo(context, dbId, url, settings.username, settings.password)) logos++
             if (i % 25 == 0) onProgress("Loading logos ${i + 1}/${channels.size}...")
         }
+        syncRecordings(htspToDbId)
         HtspLog.i("Sync done: ${htspToDbId.size} channels, ${events.size} events, $logos logos")
     } }
 
@@ -66,7 +67,8 @@ class HtspSyncManager(
     suspend fun applyChanges(
         changedChannelIds: Set<Long>,
         changedEventIds: Set<Long>,
-        deletedEventIds: Set<Long>
+        deletedEventIds: Set<Long>,
+        recordingsChanged: Boolean = false
     ) = writeLock.withLock { withContext(Dispatchers.IO) {
         val htspToDbId = if (changedChannelIds.isNotEmpty()) {
             val channels = listedChannels()
@@ -95,11 +97,51 @@ class HtspSyncManager(
         val removed = deleteRows(rows) { TvContract.buildProgramUri(it) }
         val events = repository.getEvents(changedEventIds)
         val inserted = insertPrograms(htspToDbId, events)
+        if (recordingsChanged || changedChannelIds.isNotEmpty()) syncRecordings(htspToDbId)
         HtspLog.i(
             "Live update: channels ${changedChannelIds.size}, events changed ${changedEventIds.size} " +
             "(in repo ${events.size}), deleted ${deletedEventIds.size} -> rows removed $removed, inserted $inserted"
         )
     } }
+
+    /**
+     * Recordings (pvr.hts: Recording::IsRecording -> completed and running) diffed into
+     * TvContract.RecordedPrograms by dvr ID. TV or radio input by the channel's type, for a
+     * deleted channel by whether the file has video (pvr.hts channel type fallback).
+     */
+    private fun syncRecordings(htspToDbId: Map<Long, Long>) {
+        val resolver = context.contentResolver
+        val channels = repository.channels.value
+        val wanted = LinkedHashMap<String, ContentValues>()
+        for (rec in repository.dvrEntries.value.values) {
+            if (!rec.isRecording) continue
+            val radio = channels[rec.channel]?.let { it.type == Channel.TYPE_RADIO } ?: (rec.hasVideo == false)
+            val inputId = if (radio) HtspInputs.radio(context) else HtspInputs.tv(context)
+            wanted[rec.id.toString()] = HtspRecordingMapper.toContentValues(rec, inputId, htspToDbId[rec.channel])
+        }
+
+        val stale = ArrayList<Long>()
+        val ops = ArrayList<ContentProviderOperation>()
+        val seen = HashSet<String>()
+        resolver.query(
+            TvContract.RecordedPrograms.CONTENT_URI,
+            arrayOf(TvContract.RecordedPrograms._ID, TvContract.RecordedPrograms.COLUMN_INTERNAL_PROVIDER_DATA),
+            null, null, null
+        )?.use { c ->
+            while (c.moveToNext()) {
+                val rowId = c.getLong(0)
+                val key = c.getString(1)
+                val values = key?.let { wanted[it] }
+                if (values == null || !seen.add(key)) { stale.add(rowId); continue }
+                ops.add(ContentProviderOperation.newUpdate(TvContract.buildRecordedProgramUri(rowId)).withValues(values).build())
+            }
+        }
+        deleteRows(stale) { TvContract.buildRecordedProgramUri(it) }
+        for (chunk in ops.chunked(100)) resolver.applyBatch(TvContract.AUTHORITY, ArrayList(chunk))
+        val inserts = wanted.filterKeys { it !in seen }.values
+        for (v in inserts) resolver.insert(TvContract.RecordedPrograms.CONTENT_URI, v)
+        HtspLog.i("Recordings: ${stale.size} removed, ${ops.size} updated, ${inserts.size} inserted")
+    }
 
     private fun readChannelMap(inputId: String): Map<Long, Long> {
         val map = HashMap<Long, Long>()

@@ -10,6 +10,7 @@ color common_tv_background
 color setup_sub_actions_background
 dimen setup_guidedactions_item_delimiter_padding
 dimen setup_guidedactions_vertical_padding
+drawable setup_cursor
 drawable setup_selector_background
 id guidance_breadcrumb
 id guidance_container
@@ -22,6 +23,7 @@ id scan_count
 id scan_progress
 id scan_status
 id settingsFragment
+id tag_force_light_text_attached
 layout fragment_settings
 layout setup_progress
 layout setup_scan_guidance

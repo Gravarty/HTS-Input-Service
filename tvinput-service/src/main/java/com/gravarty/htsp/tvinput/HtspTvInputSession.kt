@@ -19,7 +19,12 @@ import androidx.media3.common.text.CueGroup
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
+import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.media3.extractor.DefaultExtractorsFactory
+import com.gravarty.htsp.provider.HtspRecordingMapper
+import com.gravarty.htsp.tvinput.player.HtspVfsDataSource
 import androidx.media3.ui.SubtitleView
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioSink
@@ -66,6 +71,9 @@ class HtspTvInputSession(
     private var mediaSource: HtspMediaSource? = null
     private var seekJob: Job? = null
     private var trickJob: Job? = null
+
+    /** Playing a recording (onTimeShiftPlay) instead of live TV */
+    private var recordingPlayback = false
 
     /** pvr.hts m_startTime: wall clock of the first packet; stream time 0 (normts) maps to it. */
     @Volatile private var startTimeMs = 0L
@@ -179,58 +187,7 @@ class HtspTvInputSession(
                 return@launch
             }
 
-            // Audio is decoded to PCM (Kodi default: passthrough off). This TV reports AC3
-            // passthrough support, but AudioTrack rejects it (getAudioTrackMinBufferSize).
-            // Audio is decoded to PCM (Kodi default: passthrough off). This TV reports AC3
-            // passthrough support, but AudioTrack rejects it (getAudioTrackMinBufferSize).
-            val renderers = object : DefaultRenderersFactory(context) {
-                override fun buildAudioSink(
-                    context: Context,
-                    enableFloatOutput: Boolean,
-                    enableAudioTrackPlaybackParams: Boolean
-                ): AudioSink = PcmOnlyAudioSink(
-                    DefaultAudioSink.Builder(context)
-                        .setEnableFloatOutput(enableFloatOutput)
-                        .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
-                        .build()
-                )
-            }
-            val player = ExoPlayer.Builder(context, renderers).build()
-            player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
-                .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, !captionsEnabled)
-                .build()
-            exoPlayer = player
-            player.addListener(object : Player.Listener {
-                override fun onTracksChanged(tracks: androidx.media3.common.Tracks) {
-                    tracks.groups.forEach { g ->
-                        HtspLog.i("Track ${g.mediaTrackGroup.getFormat(0).sampleMimeType} supported=${g.isSupported} selected=${g.isSelected}")
-                    }
-                }
-
-                override fun onCues(cueGroup: CueGroup) {
-                    subtitleView?.setCues(cueGroup.cues)
-                }
-
-                override fun onRenderedFirstFrame() {
-                    HtspLog.i("First frame rendered")
-                    notifyVideoAvailable()
-                }
-
-                override fun onPlaybackStateChanged(state: Int) {
-                    HtspLog.i("Player state $state (1 idle, 2 buffering, 3 ready, 4 ended), buffered ${player.bufferedPosition} ms")
-                    if (state == Player.STATE_READY &&
-                        !player.currentTracks.containsType(C.TRACK_TYPE_VIDEO)
-                    ) {
-                        notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_AUDIO_ONLY)
-                    }
-                }
-
-                override fun onPlayerError(error: PlaybackException) {
-                    HtspLog.e("Player error: ${error.errorCodeName}", error)
-                    notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_UNKNOWN)
-                }
-            })
-            player.setVideoSurface(surface)
+            val player = newPlayer()
             val source = buildMediaSource(sub)
             mediaSource = source
             player.setMediaSource(source)
@@ -240,6 +197,61 @@ class HtspTvInputSession(
         }
 
         return true
+    }
+
+    /** Player for live TV and recordings: PCM audio, captions per TIF setting, notify* wiring. */
+    private fun newPlayer(): ExoPlayer {
+        // Audio is decoded to PCM (Kodi default: passthrough off). This TV reports AC3
+        // passthrough support, but AudioTrack rejects it (getAudioTrackMinBufferSize).
+        val renderers = object : DefaultRenderersFactory(context) {
+            override fun buildAudioSink(
+                context: Context,
+                enableFloatOutput: Boolean,
+                enableAudioTrackPlaybackParams: Boolean
+            ): AudioSink = PcmOnlyAudioSink(
+                DefaultAudioSink.Builder(context)
+                    .setEnableFloatOutput(enableFloatOutput)
+                    .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
+                    .build()
+            )
+        }
+        val player = ExoPlayer.Builder(context, renderers).build()
+        player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
+            .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, !captionsEnabled)
+            .build()
+        exoPlayer = player
+        player.addListener(object : Player.Listener {
+            override fun onTracksChanged(tracks: androidx.media3.common.Tracks) {
+                tracks.groups.forEach { g ->
+                    HtspLog.i("Track ${g.mediaTrackGroup.getFormat(0).sampleMimeType} supported=${g.isSupported} selected=${g.isSelected}")
+                }
+            }
+
+            override fun onCues(cueGroup: CueGroup) {
+                subtitleView?.setCues(cueGroup.cues)
+            }
+
+            override fun onRenderedFirstFrame() {
+                HtspLog.i("First frame rendered")
+                notifyVideoAvailable()
+            }
+
+            override fun onPlaybackStateChanged(state: Int) {
+                HtspLog.i("Player state $state (1 idle, 2 buffering, 3 ready, 4 ended), buffered ${player.bufferedPosition} ms")
+                if (state == Player.STATE_READY &&
+                    !player.currentTracks.containsType(C.TRACK_TYPE_VIDEO)
+                ) {
+                    notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_AUDIO_ONLY)
+                }
+            }
+
+            override fun onPlayerError(error: PlaybackException) {
+                HtspLog.e("Player error: ${error.errorCodeName}", error)
+                notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_UNKNOWN)
+            }
+        })
+        player.setVideoSurface(surface)
+        return player
     }
 
     // ---- Timeshift, like pvr.hts HTSPDemuxer (Speed / Seek / GetStreamTimes) ----
@@ -259,6 +271,7 @@ class HtspTvInputSession(
 
     override fun onTimeShiftPause() {
         stopTrickPlay()
+        if (recordingPlayback) { exoPlayer?.playWhenReady = false; return }
         val sub = subscription ?: return
         exoPlayer?.playWhenReady = false
         ioScope.launch { runCatching { sub.setSpeed(HtspSubscription.SPEED_PAUSED) } }
@@ -266,6 +279,7 @@ class HtspTvInputSession(
 
     override fun onTimeShiftResume() {
         stopTrickPlay()
+        if (recordingPlayback) { exoPlayer?.playWhenReady = true; return }
         val sub = subscription ?: return
         ioScope.launch { runCatching { sub.setSpeed(HtspSubscription.SPEED_NORMAL) } }
         exoPlayer?.playWhenReady = true
@@ -273,6 +287,7 @@ class HtspTvInputSession(
 
     override fun onTimeShiftSeekTo(timeMs: Long) {
         stopTrickPlay()
+        if (recordingPlayback) { exoPlayer?.seekTo(timeMs.coerceAtLeast(0)); return }
         seekJob?.cancel()
         seekJob = sessionScope.launch { seekTo(timeMs) }
     }
@@ -285,6 +300,14 @@ class HtspTvInputSession(
     override fun onTimeShiftSetPlaybackParams(params: PlaybackParams) {
         val speed = params.speed
         stopTrickPlay()
+        if (recordingPlayback) {
+            when (speed) {
+                1f -> exoPlayer?.playWhenReady = true
+                0f -> Unit
+                else -> trickJob = sessionScope.launch { trickPlayRecording(speed) }
+            }
+            return
+        }
         val sub = subscription ?: return
         if (speed == 1f) {
             ioScope.launch { runCatching { sub.setSpeed(HtspSubscription.SPEED_NORMAL) } }
@@ -329,6 +352,85 @@ class HtspTvInputSession(
         }
     }
 
+    /** Same stepping as live trick play (Kodi seeks repeatedly), on the recording's timeline. */
+    private suspend fun trickPlayRecording(speed: Float) {
+        val player = exoPlayer ?: return
+        HtspLog.i("Recording trick play x$speed")
+        player.playWhenReady = false
+        val anchorClock = SystemClock.elapsedRealtime()
+        val anchorPos = player.currentPosition
+        while (currentCoroutineContext().isActive) {
+            delay(TRICK_STEP_MS)
+            val target = anchorPos + (speed * (SystemClock.elapsedRealtime() - anchorClock)).toLong()
+            val duration = player.duration
+            when {
+                target <= 0 -> { player.seekTo(0); player.playWhenReady = true; return }
+                duration != C.TIME_UNSET && target >= duration -> {
+                    player.seekTo(duration); player.playWhenReady = true; return
+                }
+                else -> player.seekTo(target)
+            }
+        }
+    }
+
+    // ---- Recordings (pvr.hts HTSPVFS) ----
+
+    /**
+     * Plays a recording from TvContract.RecordedPrograms (TIF onTimeShiftPlay). The file is
+     * read over HTSP like pvr.hts HTSPVFS; a running recording has no fixed length.
+     */
+    override fun onTimeShiftPlay(recordedProgramUri: Uri) {
+        releasePlayerAndSubscription()
+        notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_TUNING)
+
+        var dataUri: Uri? = null
+        var endMs = 0L
+        try {
+            context.contentResolver.query(
+                recordedProgramUri,
+                arrayOf(
+                    TvContract.RecordedPrograms.COLUMN_RECORDING_DATA_URI,
+                    TvContract.RecordedPrograms.COLUMN_END_TIME_UTC_MILLIS
+                ),
+                null, null, null
+            )?.use { c ->
+                if (c.moveToFirst()) {
+                    dataUri = c.getString(0)?.let { Uri.parse(it) }
+                    endMs = c.getLong(1)
+                }
+            }
+        } catch (e: Exception) {
+            HtspLog.e("Recorded program query failed", e)
+        }
+        val uri = dataUri
+        if (HtspRecordingMapper.recordingIdFromDataUri(uri) == null) {
+            HtspLog.e("Not an HTSP recording: $recordedProgramUri")
+            notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_UNKNOWN)
+            return
+        }
+        val growing = endMs > System.currentTimeMillis()
+
+        recordingPlayback = true
+        connection = connectionProvider()
+        val conn = connection
+        tuneJob = sessionScope.launch {
+            val connected = withContext(Dispatchers.IO) { conn.ensureConnected() }
+            if (!connected) {
+                notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_UNKNOWN)
+                return@launch
+            }
+            HtspLog.i("Playing recording $uri (running: $growing)")
+            val player = newPlayer()
+            val source = ProgressiveMediaSource.Factory(
+                HtspVfsDataSource.Factory(conn, growing), DefaultExtractorsFactory()
+            ).createMediaSource(MediaItem.fromUri(uri!!))
+            player.setMediaSource(source)
+            player.prepare()
+            player.playWhenReady = true
+            notifyTimeShiftStatusChanged(TvInputManager.TIME_SHIFT_STATUS_AVAILABLE)
+        }
+    }
+
     private fun stopTrickPlay() {
         trickJob?.cancel()
         trickJob = null
@@ -360,12 +462,14 @@ class HtspTvInputSession(
     }
 
     override fun onTimeShiftGetStartPosition(): Long {
+        if (recordingPlayback) return 0 // TIF: recorded programs start at 0
         val status = subscription?.timeshiftStatus?.value
         if (status == null || startTimeMs == 0L) return TvInputManager.TIME_SHIFT_INVALID_TIME
         return startTimeMs + status.start / 1000
     }
 
     override fun onTimeShiftGetCurrentPosition(): Long {
+        if (recordingPlayback) return exoPlayer?.currentPosition ?: TvInputManager.TIME_SHIFT_INVALID_TIME
         val player = exoPlayer
         if (player == null || startTimeMs == 0L) return TvInputManager.TIME_SHIFT_INVALID_TIME
         return startTimeMs + player.currentPosition
@@ -487,6 +591,7 @@ class HtspTvInputSession(
     }
 
     private fun releasePlayerAndSubscription() {
+        recordingPlayback = false
         restartJob?.cancel()
         restartJob = null
         subtitleView?.setCues(emptyList())

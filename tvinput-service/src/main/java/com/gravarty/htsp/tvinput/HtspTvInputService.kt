@@ -32,6 +32,10 @@ open class HtspTvInputService : TvInputService() {
         return conn
     }
 
+    /** Recordings are made on the tvheadend server (pvr.hts timers). */
+    override fun onCreateRecordingSession(inputId: String): RecordingSession =
+        HtspRecordingSession(this, inputId)
+
     override fun onCreateSession(inputId: String): Session? =
         HtspTvInputSession(this) { getOrCreateConnection() }
 

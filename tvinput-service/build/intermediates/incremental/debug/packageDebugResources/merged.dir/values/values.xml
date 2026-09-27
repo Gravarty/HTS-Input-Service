@@ -27,6 +27,7 @@
     <color name="setup_sub_actions_background">#4004549D</color>
     <dimen name="setup_guidedactions_item_delimiter_padding">10dp</dimen>
     <dimen name="setup_guidedactions_vertical_padding">12dp</dimen>
+    <item name="tag_force_light_text_attached" type="id"/>
     <string name="account_add_successful">Account added.</string>
     <string name="account_failed_error">Could not add account: %s</string>
     <string name="account_label" translatable="false">Tvheadend</string>
@@ -171,13 +172,12 @@
         <item name="android:visibility">gone</item>
     </style>
     <style name="Widget.Setup.GuidedActionItemContainerStyle" parent="Widget.Leanback.GuidedActionItemContainerStyle">
-        <item name="android:layout_height">64dp</item>
+        <item name="android:minHeight">64dp</item>
         <item name="android:paddingBottom">@dimen/setup_guidedactions_vertical_padding</item>
         <item name="android:paddingTop">@dimen/setup_guidedactions_vertical_padding</item>
         <item name="android:transitionGroup">true</item>
     </style>
     <style name="Widget.Setup.GuidedActionItemDescriptionStyle" parent="Widget.Leanback.GuidedActionItemDescriptionStyle">
-        <item name="android:layout_height">17dp</item>
         <item name="android:alpha">0.5</item>
         <item name="android:fontFamily">sans-serif</item>
         <item name="android:textColor">@color/common_setup_input_description</item>

@@ -49,7 +49,7 @@
         <item name="android:textColor">#B3EEEEEE</item>
         <item name="android:textSize">16sp</item>
     </style><style name="Widget.Setup.GuidedActionItemContainerStyle" parent="Widget.Leanback.GuidedActionItemContainerStyle">
-        <item name="android:layout_height">64dp</item>
+        <item name="android:minHeight">64dp</item>
         <item name="android:paddingBottom">@dimen/setup_guidedactions_vertical_padding</item>
         <item name="android:paddingTop">@dimen/setup_guidedactions_vertical_padding</item>
         <item name="android:transitionGroup">true</item>
@@ -63,7 +63,6 @@
         <item name="android:textColor">#EEEEEE</item>
         <item name="android:textSize">14sp</item>
     </style><style name="Widget.Setup.GuidedActionItemDescriptionStyle" parent="Widget.Leanback.GuidedActionItemDescriptionStyle">
-        <item name="android:layout_height">17dp</item>
         <item name="android:alpha">0.5</item>
         <item name="android:fontFamily">sans-serif</item>
         <item name="android:textColor">@color/common_setup_input_description</item>
@@ -110,4 +109,4 @@
         <item>3 Tage</item>
         <item>7 Tage</item>
         <item>8 Tage</item>
-    </string-array></file></source></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/debug/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug" generated-set="debug$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~:!&lt;dir>navigation"><source path="/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/debug/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="generated$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"/><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="generated" generated-set="generated$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~:!&lt;dir>navigation"/><mergedItems/></merger>
+    </string-array></file><file name="setup_cursor" path="/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/res/drawable/setup_cursor.xml" qualifiers="" type="drawable"/><file path="/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/res/values/ids.xml" qualifiers=""><item name="tag_force_light_text_attached" type="id"/></file></source></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/debug/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug" generated-set="debug$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~:!&lt;dir>navigation"><source path="/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/debug/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="generated$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"/><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="generated" generated-set="generated$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~:!&lt;dir>navigation"/><mergedItems/></merger>

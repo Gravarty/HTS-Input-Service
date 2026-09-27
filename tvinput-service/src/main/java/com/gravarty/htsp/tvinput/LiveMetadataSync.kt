@@ -3,6 +3,7 @@ package com.gravarty.htsp.tvinput
 import android.content.Context
 import com.gravarty.htsp.core.HtspConnection
 import com.gravarty.htsp.core.HtspConnectionState
+import com.gravarty.htsp.core.HtspDvr
 import com.gravarty.htsp.core.HtspRepository
 import com.gravarty.htsp.provider.HtspLog
 import com.gravarty.htsp.provider.HtspServerSync
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onSubscription
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * One live metadata sync per process, shared by the TV and the radio input service
@@ -39,6 +41,11 @@ object LiveMetadataSync {
     private val changedChannels = HashSet<Long>()
     private val changedEvents = HashSet<Long>()
     private val deletedEvents = HashSet<Long>()
+    private var recordingsChanged = false
+
+    /** Called on the sync thread whenever a dvr / autorec / timerec entry changed (DVR provider). */
+    @Volatile
+    var dvrChangeListener: (() -> Unit)? = null
     private val changeSignal = Channel<Unit>(Channel.CONFLATED)
 
     @Synchronized
@@ -51,6 +58,41 @@ object LiveMetadataSync {
         val meta = HtspConnection(s.host, s.port, s.username, s.password)
         metaConnection = meta
         job = serviceScope.launch { metadataLoop(app, meta) }
+    }
+
+    private var idleReleaseJob: Job? = null
+    private var dvrHold = false
+
+    /**
+     * DVR data + commands for the DVR provider and the recording session. Keeps the metadata
+     * connection up (like pvr.hts' permanent connection); without a TV input service it is
+     * released again 60 s after the last call. Returns null if the server is not reachable
+     * or the initial sync does not finish within [timeoutMs].
+     */
+    suspend fun <T> withDvr(
+        context: Context,
+        timeoutMs: Long = 30_000,
+        block: suspend (HtspRepository, HtspDvr) -> T
+    ): T? {
+        synchronized(this) {
+            idleReleaseJob?.cancel()
+            if (!dvrHold) { dvrHold = true; acquire(context) }
+        }
+        try {
+            val ready = withTimeoutOrNull(timeoutMs) { repository.isInitialSyncCompleted.first { it } }
+            val conn = metaConnection
+            if (ready == null || conn == null) return null
+            return block(repository, HtspDvr(conn))
+        } finally {
+            synchronized(this) {
+                idleReleaseJob = serviceScope.launch {
+                    delay(DVR_IDLE_RELEASE_MS)
+                    synchronized(this@LiveMetadataSync) {
+                        if (dvrHold) { dvrHold = false; release() }
+                    }
+                }
+            }
+        }
     }
 
     /** Settings changed: reconnect with the new values if the sync is running. */
@@ -92,7 +134,9 @@ object LiveMetadataSync {
 
             try { coroutineScope {
                 repository.clear()
-                synchronized(pendingLock) { changedChannels.clear(); changedEvents.clear(); deletedEvents.clear() }
+                synchronized(pendingLock) {
+                    changedChannels.clear(); changedEvents.clear(); deletedEvents.clear(); recordingsChanged = false
+                }
                 val syncManager = HtspSyncManager(context, conn, repository, settings)
 
                 val subscribed = CompletableDeferred<Unit>()
@@ -100,6 +144,9 @@ object LiveMetadataSync {
                     conn.asyncMessages.onSubscription { subscribed.complete(Unit) }.collect { msg ->
                         if (msg.method !in METADATA_METHODS) return@collect
                         repository.handleAsyncMessage(msg)
+                        if (msg.method in DVR_METHODS || msg.method == "initialSyncCompleted") {
+                            if (repository.isInitialSyncCompleted.value) dvrChangeListener?.invoke()
+                        }
                         if (repository.isInitialSyncCompleted.value && msg.method != "initialSyncCompleted") {
                             // tvheadend htsp_channel_update_nownext(): channelUpdate with only
                             // channelId/eventId/nextEventId on every programme change -> no channel row change
@@ -119,13 +166,16 @@ object LiveMetadataSync {
                     while (isActive) {
                         changeSignal.receive()
                         delay(WRITE_DELAY_MS) // collect a burst of updates into one write
+                        var recs = false
                         val (ch, ev, del) = synchronized(pendingLock) {
+                            recs = recordingsChanged
+                            recordingsChanged = false
                             Triple(changedChannels.toSet(), changedEvents.toSet(), deletedEvents.toSet()).also {
                                 changedChannels.clear(); changedEvents.clear(); deletedEvents.clear()
                             }
                         }
-                        if (ch.isEmpty() && ev.isEmpty() && del.isEmpty()) continue
-                        runCatching { syncManager.applyChanges(ch, ev, del) }
+                        if (ch.isEmpty() && ev.isEmpty() && del.isEmpty() && !recs) continue
+                        runCatching { syncManager.applyChanges(ch, ev, del, recs) }
                             .onFailure { HtspLog.e("Live update failed: ${it.message}") }
                     }
                 }
@@ -156,6 +206,7 @@ object LiveMetadataSync {
                 "channelAdd", "channelUpdate", "channelDelete" -> channelId?.let { changedChannels.add(it) }
                 "eventAdd", "eventUpdate" -> eventId?.let { deletedEvents.remove(it); changedEvents.add(it) }
                 "eventDelete" -> eventId?.let { changedEvents.remove(it); deletedEvents.add(it) }
+                "dvrEntryAdd", "dvrEntryUpdate", "dvrEntryDelete" -> recordingsChanged = true
                 else -> return
             }
         }
@@ -163,6 +214,7 @@ object LiveMetadataSync {
     }
 
     private const val RECONNECT_DELAY_MS = 5_000L
+    private const val DVR_IDLE_RELEASE_MS = 60_000L
     private const val WRITE_DELAY_MS = 5_000L
 
     private val NOW_NEXT_FIELDS = setOf("method", "channelId", "eventId", "nextEventId")
@@ -172,6 +224,14 @@ object LiveMetadataSync {
         "tagAdd", "tagUpdate", "tagDelete",
         "eventAdd", "eventUpdate", "eventDelete",
         "dvrEntryAdd", "dvrEntryUpdate", "dvrEntryDelete",
+        "autorecEntryAdd", "autorecEntryUpdate", "autorecEntryDelete",
+        "timerecEntryAdd", "timerecEntryUpdate", "timerecEntryDelete",
         "initialSyncCompleted"
+    )
+
+    private val DVR_METHODS = setOf(
+        "dvrEntryAdd", "dvrEntryUpdate", "dvrEntryDelete",
+        "autorecEntryAdd", "autorecEntryUpdate", "autorecEntryDelete",
+        "timerecEntryAdd", "timerecEntryUpdate", "timerecEntryDelete"
     )
 }

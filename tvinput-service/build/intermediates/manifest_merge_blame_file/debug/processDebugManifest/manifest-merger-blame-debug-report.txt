@@ -14,7 +14,7 @@
 9-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:6:9-32
 10
 11    <application>
-11-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:8:5-57:19
+11-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:8:5-62:19
 12        <activity
 12-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:9:9-17:20
 13            android:name="com.gravarty.htsp.tvinput.HtspSetupActivity"
@@ -103,6 +103,15 @@
 58                android:resource="@xml/tv_input_service" />
 58-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:41:17-57
 59        </service>
-60    </application>
-61
-62</manifest>
+60
+61        <provider
+61-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:58:9-61:39
+62            android:name="com.gravarty.htsp.tvinput.HtspDvrProvider"
+62-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:59:13-44
+63            android:authorities="com.gravarty.hts.dvr"
+63-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:60:13-55
+64            android:exported="true" />
+64-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:61:13-36
+65    </application>
+66
+67</manifest>

@@ -1,7 +1,9 @@
 package com.gravarty.htsp.core
 
 import com.gravarty.htsp.core.model.Channel
+import com.gravarty.htsp.core.model.AutoRecording
 import com.gravarty.htsp.core.model.DvrEntry
+import com.gravarty.htsp.core.model.TimeRecording
 import com.gravarty.htsp.core.model.Event
 import com.gravarty.htsp.core.model.Tag
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,6 +30,12 @@ class HtspRepository {
 
     private val _dvrEntries = MutableStateFlow<Map<Long, DvrEntry>>(emptyMap())
     val dvrEntries: StateFlow<Map<Long, DvrEntry>> = _dvrEntries.asStateFlow()
+
+    private val _autorecEntries = MutableStateFlow<Map<String, AutoRecording>>(emptyMap())
+    val autorecEntries: StateFlow<Map<String, AutoRecording>> = _autorecEntries.asStateFlow()
+
+    private val _timerecEntries = MutableStateFlow<Map<String, TimeRecording>>(emptyMap())
+    val timerecEntries: StateFlow<Map<String, TimeRecording>> = _timerecEntries.asStateFlow()
 
     private val _isInitialSyncCompleted = MutableStateFlow(false)
     val isInitialSyncCompleted: StateFlow<Boolean> = _isInitialSyncCompleted.asStateFlow()
@@ -83,8 +91,27 @@ class HtspRepository {
                 publishEventsIfLive()
             }
             "dvrEntryAdd", "dvrEntryUpdate" -> {
-                val dvr = DvrEntry.fromHtsMessage(msg)
-                if (dvr.id != 0L) _dvrEntries.value = _dvrEntries.value + (dvr.id to dvr)
+                val id = msg.getLong("id") ?: return
+                val dvr = _dvrEntries.value[id]?.update(msg) ?: DvrEntry.fromHtsMessage(msg)
+                _dvrEntries.value = _dvrEntries.value + (id to dvr)
+            }
+            "autorecEntryAdd", "autorecEntryUpdate" -> {
+                val id = msg.getString("id") ?: return
+                val rec = _autorecEntries.value[id]?.update(msg) ?: AutoRecording.fromHtsMessage(msg) ?: return
+                _autorecEntries.value = _autorecEntries.value + (id to rec)
+            }
+            "autorecEntryDelete" -> {
+                val id = msg.getString("id") ?: return
+                _autorecEntries.value = _autorecEntries.value - id
+            }
+            "timerecEntryAdd", "timerecEntryUpdate" -> {
+                val id = msg.getString("id") ?: return
+                val rec = _timerecEntries.value[id]?.update(msg) ?: TimeRecording.fromHtsMessage(msg) ?: return
+                _timerecEntries.value = _timerecEntries.value + (id to rec)
+            }
+            "timerecEntryDelete" -> {
+                val id = msg.getString("id") ?: return
+                _timerecEntries.value = _timerecEntries.value - id
             }
             "dvrEntryDelete" -> {
                 val id = msg.getLong("id") ?: return
@@ -112,6 +139,8 @@ class HtspRepository {
         eventStore.clear()
         _events.value = emptyMap()
         _dvrEntries.value = emptyMap()
+        _autorecEntries.value = emptyMap()
+        _timerecEntries.value = emptyMap()
         _isInitialSyncCompleted.value = false
     }
 

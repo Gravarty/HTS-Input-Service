@@ -131,7 +131,11 @@ class HtspConnection(
         return success
     }
 
-    suspend fun sendRequest(method: String, params: Map<String, Any> = emptyMap()): HtsMessage {
+    suspend fun sendRequest(
+        method: String,
+        params: Map<String, Any> = emptyMap(),
+        timeoutMs: Long = 15000
+    ): HtsMessage {
         val seq = seqCounter.getAndIncrement()
         val deferred = CompletableDeferred<HtsMessage>()
         pendingRequests[seq] = deferred
@@ -148,8 +152,10 @@ class HtspConnection(
             }
         }
 
-        return withTimeout(15000) {
-            deferred.await()
+        return try {
+            withTimeout(timeoutMs) { deferred.await() }
+        } finally {
+            pendingRequests.remove(seq)
         }
     }
 

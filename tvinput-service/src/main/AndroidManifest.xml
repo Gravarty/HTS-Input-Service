@@ -54,6 +54,11 @@
                 android:name="android.media.tv.input"
                 android:resource="@xml/tv_input_service" />
         </service>
+    
+        <provider
+            android:name=".HtspDvrProvider"
+            android:authorities="com.gravarty.hts.dvr"
+            android:exported="true" />
     </application>
 
 </manifest>
