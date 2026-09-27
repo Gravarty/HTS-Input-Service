@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="epg_max_time_values">
+        <item>3600</item>
+        <item>21600</item>
+        <item>43200</item>
+        <item>86400</item>
+        <item>259200</item>
+        <item>604800</item>
+        <item>691200</item>
+    </string-array>
+
+    <!-- Defaults: EPG range 3 days as before (htsptvinput: 1 day), profile as in htsptvinput -->
+    <string name="pref_default_epg_max_time" translatable="false">259200</string>
+    <string name="pref_default_htsp_stream_profile" translatable="false">htsp</string>
+    <bool name="pref_default_epg_sync_enabled">true</bool>
+</resources>

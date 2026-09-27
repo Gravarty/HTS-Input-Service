@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Marks an EditText in the setup wizard that already has the forced light-text
+         color listeners attached, so HtspLoginActivity.BaseGuidedStepFragment doesn't
+         attach them again every time the row is re-bound. -->
+    <item name="tag_force_light_text_attached" type="id" />
+</resources>

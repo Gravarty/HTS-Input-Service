@@ -1,0 +1,9 @@
+com.gravarty.htsp.provider.htsp-provider-pngs-0 /Users/dennis/Downloads/HTS-Input-Service/htsp-provider/build/generated/res/pngs/debug
+com.gravarty.htsp.provider.htsp-provider-updated_navigation_xml-1 /Users/dennis/Downloads/HTS-Input-Service/htsp-provider/build/generated/updated_navigation_xml/debug
+com.gravarty.htsp.provider.htsp-provider-mergeDebugResources-2 /Users/dennis/Downloads/HTS-Input-Service/htsp-provider/build/intermediates/incremental/debug/mergeDebugResources/merged.dir
+com.gravarty.htsp.provider.htsp-provider-mergeDebugResources-3 /Users/dennis/Downloads/HTS-Input-Service/htsp-provider/build/intermediates/incremental/debug/mergeDebugResources/stripped.dir
+com.gravarty.htsp.provider.htsp-provider-debug-4 /Users/dennis/Downloads/HTS-Input-Service/htsp-provider/build/intermediates/merged_res/debug/mergeDebugResources
+com.gravarty.htsp.provider.htsp-provider-debug-5 /Users/dennis/Downloads/HTS-Input-Service/htsp-provider/build/intermediates/packaged_res/debug/packageDebugResources
+com.gravarty.htsp.provider.htsp-provider-debug-6 /Users/dennis/Downloads/HTS-Input-Service/htsp-provider/src/debug/res
+com.gravarty.htsp.provider.htsp-provider-main-7 /Users/dennis/Downloads/HTS-Input-Service/htsp-provider/src/main/res
+gradleHome-0 /Users/dennis/.gradle

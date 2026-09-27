@@ -1,0 +1,16 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /Users/dennis/Downloads/HTS-Input-Service/htsp-provider/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest16441503901598493948.xml:2:13-83
+INJECTED from /Users/dennis/Downloads/HTS-Input-Service/htsp-provider/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest16441503901598493948.xml:2:13-83
+	package
+		INJECTED from /Users/dennis/Downloads/HTS-Input-Service/htsp-provider/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest16441503901598493948.xml
+	xmlns:android
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/htsp-provider/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest16441503901598493948.xml:2:23-81
+uses-sdk
+INJECTED from /Users/dennis/Downloads/HTS-Input-Service/htsp-provider/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest16441503901598493948.xml reason: use-sdk injection requested
+INJECTED from /Users/dennis/Downloads/HTS-Input-Service/htsp-provider/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest16441503901598493948.xml
+INJECTED from /Users/dennis/Downloads/HTS-Input-Service/htsp-provider/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest16441503901598493948.xml
+	android:targetSdkVersion
+		INJECTED from /Users/dennis/Downloads/HTS-Input-Service/htsp-provider/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest16441503901598493948.xml
+	android:minSdkVersion
+		INJECTED from /Users/dennis/Downloads/HTS-Input-Service/htsp-provider/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest16441503901598493948.xml

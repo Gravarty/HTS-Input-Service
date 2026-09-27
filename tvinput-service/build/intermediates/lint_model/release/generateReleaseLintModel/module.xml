@@ -1,0 +1,20 @@
+<lint-module
+    format="1"
+    dir="/Users/dennis/Downloads/HTS-Input-Service/tvinput-service"
+    name=":tvinput-service"
+    type="LIBRARY"
+    maven="HTS:tvinput-service:unspecified"
+    agpVersion="9.4.1"
+    buildFolder="build"
+    bootClassPath="/Users/dennis/Library/Android/sdk/platforms/android-37.0/android.jar:/Users/dennis/Library/Android/sdk/build-tools/36.0.0/core-lambda-stubs.jar"
+    javaSourceLevel="17"
+    compileTarget="android-37.0"
+    neverShrinking="true"
+    highlightGradualR8Api="false">
+  <lintOptions
+      abortOnError="true"
+      absolutePaths="true"
+      checkReleaseBuilds="true"
+      explainIssues="true"/>
+  <variant name="release"/>
+</lint-module>
