@@ -135,13 +135,22 @@ class HtspTvInputSession(
             }
 
             HtspLog.i("Connected, subscribing (profile='$profile')")
-            val sub = HtspSubscription(connection)
+            val direct = context.getSharedPreferences(HtspSettings.PREF_NAME, Context.MODE_PRIVATE)
+                .getBoolean(HtspSettings.KEY_DIRECT_PACKETS, false)
+            val sub = HtspSubscription(connection, directPackets = direct)
             subscription = sub
 
             // Route this subscription's messages before subscribing, otherwise
             // subscriptionStart / muxpkt arrive with nobody listening.
             val routingReady = CompletableDeferred<Unit>()
             awaitingFirstPacket = true
+            sub.packetListener = { packet ->
+                if (awaitingFirstPacket) {
+                    awaitingFirstPacket = false
+                    startTimeMs = System.currentTimeMillis()
+                    HtspLog.i("<- first muxpkt (stream ${packet.streamIndex})")
+                }
+            }
             routingJob = ioScope.launch {
                 connection.asyncMessages
                     .onSubscription { routingReady.complete(Unit) }
@@ -157,10 +166,6 @@ class HtspTvInputSession(
                                     }
                                 }
                                 HtspLog.i("<- ${msg.method} $fields")
-                            } else if (awaitingFirstPacket) {
-                                awaitingFirstPacket = false
-                                startTimeMs = System.currentTimeMillis()
-                                HtspLog.i("<- first muxpkt (stream ${msg.getLong("stream")})")
                             }
                         }
                         sub.handleMessage(msg)
@@ -659,6 +664,7 @@ class HtspTvInputSession(
 
         val sub = subscription ?: return
         subscription = null
+        sub.release()
         // Own scope: must still run when the session scopes are cancelled in onRelease().
         CoroutineScope(Dispatchers.IO).launch {
             runCatching { sub.unsubscribe() }

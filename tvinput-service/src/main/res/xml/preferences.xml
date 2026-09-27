@@ -50,6 +50,11 @@
             android:title="@string/pref_tunneling_title"
             android:summary="@string/pref_tunneling_summary"
             android:defaultValue="false" />
+        <CheckBoxPreference
+            android:key="direct_packets"
+            android:title="@string/pref_direct_packets_title"
+            android:summary="@string/pref_direct_packets_summary"
+            android:defaultValue="false" />
     </PreferenceCategory>
 
 </PreferenceScreen>

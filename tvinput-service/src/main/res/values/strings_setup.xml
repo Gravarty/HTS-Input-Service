@@ -54,6 +54,8 @@
     <string name="setup_epg_status">This may take a few minutes.</string>
 
     <!-- Added for this project (not in htsptvinput) -->
+    <string name="pref_direct_packets_title">Direct packet delivery</string>
+    <string name="pref_direct_packets_summary">Passes video packets to the player without an intermediate buffer, which lowers CPU load. Applies from the next channel switch.</string>
     <string name="pref_tunneling_title">Tunnel mode</string>
     <string name="pref_tunneling_summary">Sends video directly from the hardware decoder to the screen. This causes unexpected behavior with timeshift.</string>
     <string name="account_label" translatable="false">Tvheadend</string>

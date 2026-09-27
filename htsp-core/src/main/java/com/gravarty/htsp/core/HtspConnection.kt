@@ -37,6 +37,13 @@ class HtspConnection(
     private val connectMutex = Mutex()
     private val writeLock = Any()
 
+    /** Direct muxpkt receivers per subscription, called on the read thread (pvr.hts style). */
+    private val packetHandlers = java.util.concurrent.ConcurrentHashMap<Long, (HtsMessage) -> Unit>()
+
+    fun setPacketHandler(subscriptionId: Long, handler: ((HtsMessage) -> Unit)?) {
+        if (handler == null) packetHandlers.remove(subscriptionId) else packetHandlers[subscriptionId] = handler
+    }
+
     /** true if the last connect() reached the server but the login was rejected. */
     @Volatile
     var authFailed = false
@@ -210,6 +217,10 @@ class HtspConnection(
 
                 if (seq != null && pendingRequests.containsKey(seq)) {
                     pendingRequests.remove(seq)?.complete(msg)
+                } else if (msg.method == "muxpkt" && packetHandlers.isNotEmpty() &&
+                    msg.getLong("subscriptionId")?.let { packetHandlers[it] }?.invoke(msg) != null
+                ) {
+                    // delivered directly on this read thread (setting "direct packet delivery")
                 } else {
                     _asyncMessages.emit(msg)
                     listener?.onAsyncMessage(msg)

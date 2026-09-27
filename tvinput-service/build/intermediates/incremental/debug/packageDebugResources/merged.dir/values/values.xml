@@ -46,6 +46,8 @@
     <string name="pref_channels_tv_title">TV channels</string>
     <string name="pref_default_epg_max_time" translatable="false">259200</string>
     <string name="pref_default_htsp_stream_profile" translatable="false">htsp</string>
+    <string name="pref_direct_packets_summary">Passes video packets to the player without an intermediate buffer, which lowers CPU load. Applies from the next channel switch.</string>
+    <string name="pref_direct_packets_title">Direct packet delivery</string>
     <string name="pref_epg_max_time_summary">How far in advance program information is loaded</string>
     <string name="pref_epg_max_time_title">Program guide range</string>
     <string name="pref_epg_sync_title">Sync program guide</string>

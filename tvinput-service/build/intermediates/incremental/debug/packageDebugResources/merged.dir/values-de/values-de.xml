@@ -24,6 +24,8 @@
     <string name="pref_channels_loading">Sender werden gezählt …</string>
     <string name="pref_channels_radio_title">Radio-Sender</string>
     <string name="pref_channels_tv_title">TV-Sender</string>
+    <string name="pref_direct_packets_summary">Übergibt Videopakete ohne Zwischenpuffer an den Player, das senkt die CPU-Last. Gilt ab dem nächsten Umschalten.</string>
+    <string name="pref_direct_packets_title">Direkte Paketübergabe</string>
     <string name="pref_epg_max_time_summary">Wie weit im Voraus Programminformationen geladen werden</string>
     <string name="pref_epg_max_time_title">Zeitraum der Programmübersicht</string>
     <string name="pref_epg_sync_title">Programmübersicht synchronisieren</string>

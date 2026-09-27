@@ -67,6 +67,7 @@ class HtspMediaPeriod(
 
     private val tracks = ConcurrentHashMap<Int, Track>()
     private val cueEncoder = CueEncoder()
+    private val packetSink: (HtspMuxPacket) -> Unit = { onPacket(it) }
     private val enabled: MutableSet<Int> = ConcurrentHashMap.newKeySet()
     @Volatile private var trackGroups = TrackGroupArray.EMPTY
     @Volatile private var prepared = false
@@ -89,7 +90,11 @@ class HtspMediaPeriod(
             HtspLog.i("MediaPeriod prepared: ${trackGroups.length} usable tracks of ${streams.size}")
             prepared = true
             callback.onPrepared(this@HtspMediaPeriod)
-            subscription.packets.collect { onPacket(it) }
+            if (subscription.directPackets) {
+                subscription.packetSink = packetSink
+            } else {
+                subscription.packets.collect { onPacket(it) }
+            }
         }
     }
 
@@ -360,6 +365,7 @@ class HtspMediaPeriod(
     }
 
     fun release() {
+        if (subscription.packetSink === packetSink) subscription.packetSink = null
         job?.cancel()
         errorJob?.cancel()
         tracks.values.forEach { it.queue.release() }

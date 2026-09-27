@@ -46,6 +46,8 @@ string pref_channels_radio_title
 string pref_channels_tv_title
 string pref_default_epg_max_time
 string pref_default_htsp_stream_profile
+string pref_direct_packets_summary
+string pref_direct_packets_title
 string pref_epg_max_time_summary
 string pref_epg_max_time_title
 string pref_epg_sync_title

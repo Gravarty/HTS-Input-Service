@@ -29,6 +29,8 @@ data class HtspSettings(
         const val KEY_PROFILE = "profile"
         /** Multimedia tunneling (Android TV tunnel mode), boolean, default off (timeshift problems) */
         const val KEY_TUNNELING = "tunneling"
+        /** Direct packet delivery from the read thread to the player, boolean, default off */
+        const val KEY_DIRECT_PACKETS = "direct_packets"
         const val KEY_TIMEOUT = "connect_timeout"
         const val KEY_ENABLE_EPG = "enable_epg"
     }

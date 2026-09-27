@@ -19,7 +19,12 @@ import java.util.concurrent.atomic.AtomicLong
  */
 class HtspSubscription(
     private val connection: HtspConnection,
-    val subscriptionId: Long = nextSubscriptionId.getAndIncrement()
+    val subscriptionId: Long = nextSubscriptionId.getAndIncrement(),
+    /**
+     * true: packets go from the connection's read thread straight to [packetSink] (like
+     * pvr.hts' receive thread -> demuxer). false: through the [packets] flow.
+     */
+    val directPackets: Boolean = false
 ) {
     private val _signalStatus = MutableStateFlow(SignalStatus())
     val signalStatus: StateFlow<SignalStatus> = _signalStatus.asStateFlow()
@@ -40,6 +45,37 @@ class HtspSubscription(
 
     private val _packets = MutableSharedFlow<HtspMuxPacket>(replay = 1, extraBufferCapacity = 512)
     val packets: SharedFlow<HtspMuxPacket> = _packets.asSharedFlow()
+
+    /** Player demuxer for direct delivery (only used with [directPackets]). */
+    @Volatile
+    var packetSink: ((HtspMuxPacket) -> Unit)? = null
+
+    /** Sees every packet in both modes (e.g. first-packet time for timeshift). */
+    @Volatile
+    var packetListener: ((HtspMuxPacket) -> Unit)? = null
+
+    init {
+        if (directPackets) {
+            connection.setPacketHandler(subscriptionId) { msg ->
+                // Runs on the read thread: a failing packet must not end the connection
+                try {
+                    HtspMuxPacket.fromHtsMessage(msg)?.let { packet ->
+                        packetListener?.invoke(packet)
+                        packetSink?.invoke(packet)
+                    }
+                } catch (e: Exception) {
+                    System.err.println("[HTSP] Packet dropped (subscription $subscriptionId): $e")
+                }
+            }
+        }
+    }
+
+    /** Stops direct packet delivery for this subscription. */
+    fun release() {
+        connection.setPacketHandler(subscriptionId, null)
+        packetSink = null
+        packetListener = null
+    }
 
     private val _isSubscribed = MutableStateFlow(false)
     val isSubscribed: StateFlow<Boolean> = _isSubscribed.asStateFlow()
@@ -128,6 +164,7 @@ class HtspSubscription(
         when (msg.method) {
             "muxpkt" -> {
                 HtspMuxPacket.fromHtsMessage(msg)?.let { packet ->
+                    packetListener?.invoke(packet)
                     _packets.emit(packet)
                 }
             }
