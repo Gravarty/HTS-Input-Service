@@ -59,6 +59,8 @@ class HtspMediaPeriod(
         @Volatile var started = !isVideo
         val isMpeg2 = format.sampleMimeType == MimeTypes.VIDEO_MPEG2
         val isText = MimeTypes.getTrackType(format.sampleMimeType) == C.TRACK_TYPE_TEXT
+        val isDolby = format.sampleMimeType == MimeTypes.AUDIO_AC3 || format.sampleMimeType == MimeTypes.AUDIO_E_AC3
+        var dialnorm = 0
         var aspectCode = -1        // last confirmed aspect_ratio_information
         var pendingAspectCode = -1
         var pendingCount = 0
@@ -145,6 +147,10 @@ class HtspMediaPeriod(
         var data = packet.payload
         if (track.isAac) data = stripAdts(track, data) ?: return
         if (track.isMpeg2 && packet.isKeyframe) checkMpeg2Aspect(track, data)
+        if (track.isDolby) {
+            val dn = DialnormGain.parseDialnorm(data.array, data.offset, data.length)
+            if (dn != 0 && dn != track.dialnorm) { track.dialnorm = dn; DialnormGain.setDialnorm(dn) }
+        }
 
         track.dvbParser?.let { parser ->
             writeDvbCues(track, parser, data, timeUs)
@@ -261,6 +267,9 @@ class HtspMediaPeriod(
             streamResetFlags[i] = true
             enabled.add(index)
         }
+        // dialnorm gain only while a Dolby track plays; set again from its next frame header
+        val audio = enabled.mapNotNull { tracks[it] }.firstOrNull { MimeTypes.isAudio(it.format.sampleMimeType) }
+        if (audio == null || !audio.isDolby) DialnormGain.reset() else audio.dialnorm = 0
         return positionUs
     }
 

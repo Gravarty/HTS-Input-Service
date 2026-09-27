@@ -49,6 +49,8 @@ int string pref_direct_packets_title 0x0
 int string pref_epg_max_time_summary 0x0
 int string pref_epg_max_time_title 0x0
 int string pref_epg_sync_title 0x0
+int string pref_force_stereo_summary 0x0
+int string pref_force_stereo_title 0x0
 int string pref_profile_current 0x0
 int string pref_profile_loading 0x0
 int string pref_profile_summary 0x0

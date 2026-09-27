@@ -50,6 +50,8 @@ string pref_direct_packets_title
 string pref_epg_max_time_summary
 string pref_epg_max_time_title
 string pref_epg_sync_title
+string pref_force_stereo_summary
+string pref_force_stereo_title
 string pref_profile_current
 string pref_profile_loading
 string pref_profile_summary

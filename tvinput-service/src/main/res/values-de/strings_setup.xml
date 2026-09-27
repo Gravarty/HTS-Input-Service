@@ -54,6 +54,8 @@
     <string name="setup_epg_status">Dies kann einige Minuten dauern.</string>
 
     <!-- Added for this project (not in htsptvinput) -->
+    <string name="pref_force_stereo_title">Stereo erzwingen</string>
+    <string name="pref_force_stereo_summary">Mischt Mehrkanalton (z. B. 5.1) auf Stereo herunter. Nur ausschalten, wenn das Gerät Mehrkanalton ausgeben kann.</string>
     <string name="pref_direct_packets_title">Direkte Paketübergabe</string>
     <string name="pref_direct_packets_summary">Übergibt Videopakete ohne Zwischenpuffer an den Player, das senkt die CPU-Last. Gilt ab dem nächsten Umschalten.</string>
     <string name="pref_tunneling_title">Tunnel-Modus</string>

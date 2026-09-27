@@ -46,6 +46,11 @@
             android:summary="@string/pref_profile_summary"
             android:defaultValue="@string/pref_default_htsp_stream_profile" />
         <CheckBoxPreference
+            android:key="force_stereo"
+            android:title="@string/pref_force_stereo_title"
+            android:summary="@string/pref_force_stereo_summary"
+            android:defaultValue="true" />
+        <CheckBoxPreference
             android:key="tunneling"
             android:title="@string/pref_tunneling_title"
             android:summary="@string/pref_tunneling_summary"

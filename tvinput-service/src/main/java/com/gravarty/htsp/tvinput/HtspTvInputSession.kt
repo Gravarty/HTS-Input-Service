@@ -21,6 +21,14 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
+import android.media.MediaFormat
+import android.os.Build
+import android.os.Handler
+import androidx.media3.common.Format
+import androidx.media3.exoplayer.Renderer
+import androidx.media3.exoplayer.audio.AudioRendererEventListener
+import androidx.media3.exoplayer.audio.MediaCodecAudioRenderer
+import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.extractor.DefaultExtractorsFactory
@@ -30,6 +38,8 @@ import androidx.media3.ui.SubtitleView
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioSink
 import com.gravarty.htsp.tvinput.player.PcmOnlyAudioSink
+import com.gravarty.htsp.tvinput.player.StereoDownmix
+import com.gravarty.htsp.tvinput.player.DialnormGainProcessor
 import com.gravarty.htsp.core.HtspConnection
 import com.gravarty.htsp.core.HtspSettings
 import com.gravarty.htsp.core.HtspSubscription
@@ -206,6 +216,10 @@ class HtspTvInputSession(
         return true
     }
 
+    private val forceStereo: Boolean
+        get() = context.getSharedPreferences(HtspSettings.PREF_NAME, Context.MODE_PRIVATE)
+            .getBoolean(HtspSettings.KEY_FORCE_STEREO, true)
+
     /** Player for live TV and recordings: PCM audio, captions per TIF setting, notify* wiring. */
     private fun newPlayer(): ExoPlayer {
         // Audio is decoded to PCM (Kodi default: passthrough off). This TV reports AC3
@@ -217,10 +231,50 @@ class HtspTvInputSession(
                 enableAudioTrackPlaybackParams: Boolean
             ): AudioSink = PcmOnlyAudioSink(
                 DefaultAudioSink.Builder(context)
+                    // "force stereo": downmix in the plugin, the MTK AC3 decoder ignores the
+                    // decoder hint below and outputs 6 channels
+                    // + dialnorm gain for AC3/E-AC3 (Kodi/ffmpeg does not apply dialnorm)
+                    .setAudioProcessors(
+                        if (forceStereo) arrayOf(StereoDownmix.processor(), DialnormGainProcessor())
+                        else arrayOf(DialnormGainProcessor())
+                    )
                     .setEnableFloatOutput(enableFloatOutput)
                     .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
                     .build()
             )
+
+            // Setting "force stereo" (default on, like Kodi's default 2.0 speaker layout): the audio
+            // decoder is asked for at most 2 channels (MediaFormat.KEY_MAX_OUTPUT_CHANNEL_COUNT,
+            // Android 11+), so e.g. AC3 5.1 is downmixed by the decoder with the stream's own
+            // downmix metadata. Off: output as decoded. This TV cannot create a 6-channel AudioTrack.
+            override fun buildAudioRenderers(
+                context: Context,
+                extensionRendererMode: Int,
+                mediaCodecSelector: MediaCodecSelector,
+                enableDecoderFallback: Boolean,
+                audioSink: AudioSink,
+                eventHandler: Handler,
+                eventListener: AudioRendererEventListener,
+                out: ArrayList<Renderer>
+            ) {
+                if (!forceStereo) {
+                    super.buildAudioRenderers(
+                        context, extensionRendererMode, mediaCodecSelector, enableDecoderFallback,
+                        audioSink, eventHandler, eventListener, out
+                    )
+                    return
+                }
+                out.add(object : MediaCodecAudioRenderer(
+                    context, mediaCodecSelector, enableDecoderFallback, eventHandler, eventListener, audioSink
+                ) {
+                    override fun getMediaFormat(
+                        format: Format, codecMimeType: String, codecMaxInputSize: Int, codecOperatingRate: Float
+                    ): MediaFormat =
+                        super.getMediaFormat(format, codecMimeType, codecMaxInputSize, codecOperatingRate).apply {
+                            if (Build.VERSION.SDK_INT >= 30) setInteger(MediaFormat.KEY_MAX_OUTPUT_CHANNEL_COUNT, 2)
+                        }
+                })
+            }
         }
         val player = ExoPlayer.Builder(context, renderers).build()
         player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
@@ -232,12 +286,23 @@ class HtspTvInputSession(
         val tunneling = context.getSharedPreferences(HtspSettings.PREF_NAME, Context.MODE_PRIVATE)
             .getBoolean(HtspSettings.KEY_TUNNELING, false) // off: breaks timeshift rewind on some TVs
         (player.trackSelector as? DefaultTrackSelector)?.let {
-            it.setParameters(it.buildUponParameters().setTunnelingEnabled(tunneling))
+            it.setParameters(
+                it.buildUponParameters()
+                    .setTunnelingEnabled(tunneling)
+                    // "force stereo": prefer a stereo track (e.g. the MP2 track next to AC3 5.1);
+                    // only without one the multichannel track is used and downmixed
+                    .setMaxAudioChannelCount(if (forceStereo) 2 else Int.MAX_VALUE)
+            )
         }
         player.addListener(object : Player.Listener {
             override fun onTracksChanged(tracks: androidx.media3.common.Tracks) {
                 tracks.groups.forEach { g ->
                     HtspLog.i("Track ${g.mediaTrackGroup.getFormat(0).sampleMimeType} supported=${g.isSupported} selected=${g.isSelected}")
+                }
+                // Report the audio track the player actually plays (TrackGroup id = TvTrackInfo id),
+                // not just the first one in the list
+                tracks.groups.firstOrNull { it.type == C.TRACK_TYPE_AUDIO && it.isSelected }?.let {
+                    notifyTrackSelected(TvTrackInfo.TYPE_AUDIO, it.mediaTrackGroup.id)
                 }
             }
 
@@ -634,9 +699,6 @@ class HtspTvInputSession(
                 publishTracks(tvTracks)
                 tvTracks.firstOrNull { it.type == TvTrackInfo.TYPE_VIDEO }?.let {
                     notifyTrackSelected(TvTrackInfo.TYPE_VIDEO, it.id)
-                }
-                tvTracks.firstOrNull { it.type == TvTrackInfo.TYPE_AUDIO }?.let {
-                    notifyTrackSelected(TvTrackInfo.TYPE_AUDIO, it.id)
                 }
             }
             .launchIn(sessionScope)

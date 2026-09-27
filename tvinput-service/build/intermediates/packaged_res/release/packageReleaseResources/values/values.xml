@@ -51,6 +51,8 @@
     <string name="pref_epg_max_time_summary">How far in advance program information is loaded</string>
     <string name="pref_epg_max_time_title">Program guide range</string>
     <string name="pref_epg_sync_title">Sync program guide</string>
+    <string name="pref_force_stereo_summary">Mixes multichannel audio (e.g. 5.1) down to stereo. Only turn off if the device can output multichannel audio.</string>
+    <string name="pref_force_stereo_title">Force stereo</string>
     <string name="pref_profile_current">Current profile: %1$s</string>
     <string name="pref_profile_loading">Loading profiles from the server…</string>
     <string name="pref_profile_summary">Tvheadend stream profile used for playback</string>
