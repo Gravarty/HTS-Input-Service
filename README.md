@@ -29,11 +29,11 @@ Alternatively, there's Monchi Live TV, which is a fork of Google's Live Channels
 - **Auto-reconnect** if the connection drops
 - **Configurable EPG range** (1 Hour, 6 Hours, 12 Hours, 1 Day, 3 Days, 7 Days and 8 Days)
 - **Fully working Timeshift** Pause the current programme, rewind and fast-forward.
+- **Recordings**, timers and series recordings
 - Works with the built-in Live Channels / TV app, so it fits into the normal Android TV experience
 
 ## Not available yet
 
-- Recordings, timers and series recordings
 - Channel groups (tags)
 - Wake-on-LAN, CAM info
 

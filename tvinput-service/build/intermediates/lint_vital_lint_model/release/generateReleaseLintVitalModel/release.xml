@@ -26,6 +26,6 @@
       type="MAIN"
       applicationId="com.gravarty.htsp.tvinput"
       generatedSourceFolders="build/generated/ap_generated_sources/release/out"
-      desugaredMethodsFiles="/Users/dennis/.gradle/caches/9.6.0/transforms/62aa248166b30eabc89580da379c8f89/transformed/D8BackportedDesugaredMethods.txt">
+      desugaredMethodsFiles="/Users/dennis/.gradle/caches/9.6.0/transforms/e97db6e2e55f3e131c2b89d4f7e22500/transformed/D8BackportedDesugaredMethods.txt">
   </artifact>
 </variant>
