@@ -40,6 +40,8 @@ import androidx.media3.exoplayer.audio.DefaultAudioSink
 import com.gravarty.htsp.tvinput.player.PcmOnlyAudioSink
 import com.gravarty.htsp.tvinput.player.StereoDownmix
 import com.gravarty.htsp.tvinput.player.DialnormGainProcessor
+import com.gravarty.htsp.tvinput.player.DialnormGain
+import androidx.media3.decoder.ffmpeg.FfmpegAudioRenderer
 import com.gravarty.htsp.core.HtspConnection
 import com.gravarty.htsp.core.HtspSettings
 import com.gravarty.htsp.core.HtspSubscription
@@ -257,15 +259,23 @@ class HtspTvInputSession(
                 eventListener: AudioRendererEventListener,
                 out: ArrayList<Renderer>
             ) {
+                // ffmpeg decodes without dialnorm (like Kodi); the dialnorm gain is only for
+                // hardware decoders, so it is bypassed while the ffmpeg decoder is in use
+                val listener = object : AudioRendererEventListener by eventListener {
+                    override fun onAudioDecoderInitialized(
+                        decoderName: String, initializedTimestampMs: Long, initializationDurationMs: Long
+                    ) {
+                        DialnormGain.softwareDecoder = decoderName.startsWith("ffmpeg")
+                        eventListener.onAudioDecoderInitialized(decoderName, initializedTimestampMs, initializationDurationMs)
+                    }
+                }
                 if (!forceStereo) {
                     super.buildAudioRenderers(
-                        context, extensionRendererMode, mediaCodecSelector, enableDecoderFallback,
-                        audioSink, eventHandler, eventListener, out
+                        context, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF, mediaCodecSelector, enableDecoderFallback,
+                        audioSink, eventHandler, listener, out
                     )
-                    return
-                }
-                out.add(object : MediaCodecAudioRenderer(
-                    context, mediaCodecSelector, enableDecoderFallback, eventHandler, eventListener, audioSink
+                } else out.add(object : MediaCodecAudioRenderer(
+                    context, mediaCodecSelector, enableDecoderFallback, eventHandler, listener, audioSink
                 ) {
                     override fun getMediaFormat(
                         format: Format, codecMimeType: String, codecMaxInputSize: Int, codecOperatingRate: Float
@@ -274,6 +284,9 @@ class HtspTvInputSession(
                             if (Build.VERSION.SDK_INT >= 30) setInteger(MediaFormat.KEY_MAX_OUTPUT_CHANNEL_COUNT, 2)
                         }
                 })
+                // Fallback after the hardware decoder: used only for formats MediaCodec cannot decode
+                // (e.g. AC3 on sticks without a Dolby decoder) - Kodi decodes everything with ffmpeg
+                out.add(FfmpegAudioRenderer(eventHandler, listener, audioSink))
             }
         }
         val player = ExoPlayer.Builder(context, renderers).build()

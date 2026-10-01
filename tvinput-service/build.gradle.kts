@@ -27,6 +27,8 @@ dependencies {
     implementation(libs.androidx.media3.datasource)
     implementation(libs.androidx.media3.extractor)
     implementation(libs.androidx.media3.ui)
+    // Software audio decoding like Kodi (ffmpeg), prebuilt by Jellyfin, for devices without e.g. an AC3 decoder
+    implementation(libs.jellyfin.media3.ffmpeg.decoder)
     // Setup / settings pages taken from the old htsptvinput project (Leanback)
     implementation(libs.androidx.leanback)
     implementation(libs.androidx.leanback.preference)

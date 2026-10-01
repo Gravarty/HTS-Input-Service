@@ -18,15 +18,20 @@ import kotlin.math.pow
  */
 object DialnormGain {
     @Volatile
-    var linear: Float = 1f
-        private set
+    private var gain: Float = 1f
+
+    /** true while the ffmpeg decoder plays: ffmpeg does not apply dialnorm, so no gain */
+    @Volatile
+    var softwareDecoder: Boolean = false
+
+    val linear: Float get() = if (softwareDecoder) 1f else gain
 
     /** dialnorm 1..31 (dB below full scale); 0 = unknown / not AC3 -> no gain */
     fun setDialnorm(dialnorm: Int) {
-        linear = if (dialnorm in 1..31) 10f.pow((31 - dialnorm) / 20f) else 1f
+        gain = if (dialnorm in 1..31) 10f.pow((31 - dialnorm) / 20f) else 1f
     }
 
-    fun reset() { linear = 1f }
+    fun reset() { gain = 1f }
 
     /** Reads dialnorm from an AC3 (bsid <= 10) or E-AC3 (bsid 11..16) sync frame, or 0. */
     fun parseDialnorm(a: ByteArray, off: Int, len: Int): Int {

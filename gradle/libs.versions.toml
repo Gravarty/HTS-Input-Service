@@ -13,6 +13,7 @@ media3 = "1.5.1"
 coroutines = "1.10.1"
 
 [libraries]
+jellyfin-media3-ffmpeg-decoder = { group = "org.jellyfin.media3", name = "media3-ffmpeg-decoder", version = "1.5.0+1" }
 androidx-leanback = { group = "androidx.leanback", name = "leanback", version = "1.2.0" }
 androidx-leanback-preference = { group = "androidx.leanback", name = "leanback-preference", version = "1.2.0" }
 androidx-preference = { group = "androidx.preference", name = "preference", version = "1.2.1" }
