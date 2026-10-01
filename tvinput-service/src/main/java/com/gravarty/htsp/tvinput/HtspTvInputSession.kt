@@ -317,7 +317,7 @@ class HtspTvInputSession(
 
             override fun onPlaybackStateChanged(state: Int) {
                 HtspLog.i("Player state $state (1 idle, 2 buffering, 3 ready, 4 ended), buffered ${player.bufferedPosition} ms")
-                if (state == Player.STATE_READY &&
+                if (exoPlayer === player && state == Player.STATE_READY &&
                     !player.currentTracks.containsType(C.TRACK_TYPE_VIDEO)
                 ) {
                     notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_AUDIO_ONLY)
@@ -325,6 +325,12 @@ class HtspTvInputSession(
             }
 
             override fun onPlayerError(error: PlaybackException) {
+                if (exoPlayer !== player) {
+                    // e.g. "Player release timed out" while switching channels: the old player
+                    // is already gone, the new channel must not show "video unavailable"
+                    HtspLog.e("Ignored error of released player: ${error.errorCodeName}")
+                    return
+                }
                 HtspLog.e("Player error: ${error.errorCodeName}", error)
                 notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_UNKNOWN)
             }
@@ -719,8 +725,11 @@ class HtspTvInputSession(
         timeshiftAnnounced = false
         tuneJob?.cancel()
         tuneJob = null
-        exoPlayer?.release()
+        // Clear the field first: ExoPlayer reports a release timeout as player error from inside
+        // release(); the listener below ignores errors of players that are no longer current.
+        val oldPlayer = exoPlayer
         exoPlayer = null
+        oldPlayer?.release()
         routingJob?.cancel()
         routingJob = null
 
