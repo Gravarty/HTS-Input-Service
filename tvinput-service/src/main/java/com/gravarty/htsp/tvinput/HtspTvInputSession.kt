@@ -138,6 +138,7 @@ class HtspTvInputSession(
             .getString(HtspSettings.KEY_PROFILE, "") ?: ""
 
         connection = connectionProvider()
+        ioScope.launch { RecentChannelsPreview.onChannelTuned(context, channelUri) }
         tuneJob = sessionScope.launch {
             val connected = withContext(Dispatchers.IO) { connection.ensureConnected() }
             if (!connected) {

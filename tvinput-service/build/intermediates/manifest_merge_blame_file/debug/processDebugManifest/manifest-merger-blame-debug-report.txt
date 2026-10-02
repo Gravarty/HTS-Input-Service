@@ -14,7 +14,7 @@
 9-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:6:9-32
 10
 11    <application>
-11-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:8:5-62:19
+11-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:8:5-68:19
 12        <activity
 12-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:9:9-17:20
 13            android:name="com.gravarty.htsp.tvinput.HtspSetupActivity"
@@ -112,6 +112,16 @@
 63-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:60:13-55
 64            android:exported="true" />
 64-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:61:13-36
-65    </application>
-66
-67</manifest>
+65
+66        <!-- Home-screen tile images for the "Recently watched" preview channel (read by launchers) -->
+67        <provider
+67-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:64:9-67:39
+68            android:name="com.gravarty.htsp.tvinput.ChannelTileProvider"
+68-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:65:13-48
+69            android:authorities="com.gravarty.hts.tiles"
+69-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:66:13-57
+70            android:exported="true" />
+70-->/Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:67:13-36
+71    </application>
+72
+73</manifest>

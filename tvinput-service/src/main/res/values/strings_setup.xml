@@ -54,6 +54,10 @@
     <string name="setup_epg_status">This may take a few minutes.</string>
 
     <!-- Added for this project (not in htsptvinput) -->
+    <string name="pref_home_preview_title">Home screen channel</string>
+    <string name="pref_home_preview_summary">Shows the recently watched channels as a channel on the launcher home screen.</string>
+    <string name="preview_recent_channels_description">Recently watched channels</string>
+    <string name="preview_recent_channels">Recently watched</string>
     <string name="pref_force_stereo_title">Force stereo</string>
     <string name="pref_force_stereo_summary">Mixes multichannel audio (e.g. 5.1) down to stereo. Only turn off if the device can output multichannel audio.</string>
     <string name="pref_direct_packets_title">Direct packet delivery</string>

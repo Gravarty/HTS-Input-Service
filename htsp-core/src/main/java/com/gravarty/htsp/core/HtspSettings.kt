@@ -31,6 +31,8 @@ data class HtspSettings(
         const val KEY_TUNNELING = "tunneling"
         /** Downmix multichannel audio to stereo, boolean, default on */
         const val KEY_FORCE_STEREO = "force_stereo"
+        /** "Recently watched" preview channel on the launcher home screen, boolean, default off */
+        const val KEY_HOME_PREVIEW = "home_preview"
         /** Direct packet delivery from the read thread to the player, boolean, default off */
         const val KEY_DIRECT_PACKETS = "direct_packets"
         const val KEY_TIMEOUT = "connect_timeout"

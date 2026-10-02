@@ -29,6 +29,8 @@ dependencies {
     implementation(libs.androidx.media3.ui)
     // Software audio decoding like Kodi (ffmpeg), prebuilt by Jellyfin, for devices without e.g. an AC3 decoder
     implementation(libs.jellyfin.media3.ffmpeg.decoder)
+    // Dominant logo colour for the home-screen tiles
+    implementation(libs.androidx.palette)
     // Setup / settings pages taken from the old htsptvinput project (Leanback)
     implementation(libs.androidx.leanback)
     implementation(libs.androidx.leanback.preference)

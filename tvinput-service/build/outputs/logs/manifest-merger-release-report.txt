@@ -1,7 +1,7 @@
 -- Merging decision tree log ---
 manifest
-ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:2:1-64:12
-INJECTED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:2:1-64:12
+ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:2:1-70:12
+INJECTED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:2:1-70:12
 	package
 		INJECTED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml
 	xmlns:android
@@ -13,7 +13,7 @@ ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/An
 	android:name
 		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:5:9-48
 application
-ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:8:5-62:19
+ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:8:5-68:19
 activity#com.gravarty.htsp.tvinput.HtspSetupActivity
 ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:9:9-17:20
 	android:label
@@ -90,6 +90,14 @@ ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/An
 		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:61:13-36
 	android:name
 		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:59:13-44
+provider#com.gravarty.htsp.tvinput.ChannelTileProvider
+ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:64:9-67:39
+	android:authorities
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:66:13-57
+	android:exported
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:67:13-36
+	android:name
+		ADDED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml:65:13-48
 uses-sdk
 INJECTED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /Users/dennis/Downloads/HTS-Input-Service/tvinput-service/src/main/AndroidManifest.xml

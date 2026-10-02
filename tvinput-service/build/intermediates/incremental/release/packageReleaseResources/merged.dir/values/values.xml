@@ -53,6 +53,8 @@
     <string name="pref_epg_sync_title">Sync program guide</string>
     <string name="pref_force_stereo_summary">Mixes multichannel audio (e.g. 5.1) down to stereo. Only turn off if the device can output multichannel audio.</string>
     <string name="pref_force_stereo_title">Force stereo</string>
+    <string name="pref_home_preview_summary">Shows the recently watched channels as a channel on the launcher home screen.</string>
+    <string name="pref_home_preview_title">Home screen channel</string>
     <string name="pref_profile_current">Current profile: %1$s</string>
     <string name="pref_profile_loading">Loading profiles from the server…</string>
     <string name="pref_profile_summary">Tvheadend stream profile used for playback</string>
@@ -63,6 +65,8 @@
     <string name="pref_server_title">Tvheadend server</string>
     <string name="pref_tunneling_summary">Sends video directly from the hardware decoder to the screen. This causes unexpected behavior with timeshift.</string>
     <string name="pref_tunneling_title">Tunnel mode</string>
+    <string name="preview_recent_channels">Recently watched</string>
+    <string name="preview_recent_channels_description">Recently watched channels</string>
     <string name="server_htsp_port">HTSP port</string>
     <string name="server_htsp_port_invalid">Invalid port</string>
     <string name="server_http_port">HTTP port</string>

@@ -53,6 +53,8 @@ string pref_epg_max_time_title
 string pref_epg_sync_title
 string pref_force_stereo_summary
 string pref_force_stereo_title
+string pref_home_preview_summary
+string pref_home_preview_title
 string pref_profile_current
 string pref_profile_loading
 string pref_profile_summary
@@ -63,6 +65,8 @@ string pref_server_summary
 string pref_server_title
 string pref_tunneling_summary
 string pref_tunneling_title
+string preview_recent_channels
+string preview_recent_channels_description
 string server_htsp_port
 string server_htsp_port_invalid
 string server_http_port

@@ -6,7 +6,7 @@
     mergedManifest="build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml"
     proguardFiles="build/intermediates/default_proguard_files/global/proguard-android-optimize.txt-9.4.1"
     partialResultsDir="build/intermediates/lint_vital_partial_results/release/lintVitalAnalyzeRelease/out"
-    desugaredMethodsFiles="/Users/dennis/.gradle/caches/9.6.0/transforms/e97db6e2e55f3e131c2b89d4f7e22500/transformed/D8BackportedDesugaredMethods.txt">
+    desugaredMethodsFiles="/Users/dennis/.gradle/caches/9.6.0/transforms/73a064aafe0243d6ea0e390b9cbc2296/transformed/D8BackportedDesugaredMethods.txt">
   <buildFeatures/>
   <sourceProviders>
     <sourceProvider
@@ -26,6 +26,6 @@
       type="MAIN"
       applicationId="com.gravarty.htsp.tvinput"
       generatedSourceFolders="build/generated/ap_generated_sources/release/out"
-      desugaredMethodsFiles="/Users/dennis/.gradle/caches/9.6.0/transforms/e97db6e2e55f3e131c2b89d4f7e22500/transformed/D8BackportedDesugaredMethods.txt">
+      desugaredMethodsFiles="/Users/dennis/.gradle/caches/9.6.0/transforms/73a064aafe0243d6ea0e390b9cbc2296/transformed/D8BackportedDesugaredMethods.txt">
   </artifact>
 </variant>

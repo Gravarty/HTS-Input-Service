@@ -62,6 +62,12 @@
             android:name="com.gravarty.htsp.tvinput.HtspDvrProvider"
             android:authorities="com.gravarty.hts.dvr"
             android:exported="true" />
+
+        <!-- Home-screen tile images for the "Recently watched" preview channel (read by launchers) -->
+        <provider
+            android:name="com.gravarty.htsp.tvinput.ChannelTileProvider"
+            android:authorities="com.gravarty.hts.tiles"
+            android:exported="true" />
     </application>
 
 </manifest>

@@ -51,6 +51,8 @@ int string pref_epg_max_time_title 0x0
 int string pref_epg_sync_title 0x0
 int string pref_force_stereo_summary 0x0
 int string pref_force_stereo_title 0x0
+int string pref_home_preview_summary 0x0
+int string pref_home_preview_title 0x0
 int string pref_profile_current 0x0
 int string pref_profile_loading 0x0
 int string pref_profile_summary 0x0
@@ -61,6 +63,8 @@ int string pref_server_summary 0x0
 int string pref_server_title 0x0
 int string pref_tunneling_summary 0x0
 int string pref_tunneling_title 0x0
+int string preview_recent_channels 0x0
+int string preview_recent_channels_description 0x0
 int string server_htsp_port 0x0
 int string server_htsp_port_invalid 0x0
 int string server_http_port 0x0

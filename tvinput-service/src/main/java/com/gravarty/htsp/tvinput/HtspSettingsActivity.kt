@@ -112,6 +112,10 @@ class HtspSettingsActivity : Activity() {
         override fun onSharedPreferenceChanged(prefs: SharedPreferences?, key: String?) {
             // Profile: used from the next channel switch on. EPG: reload right away.
             if (key == HtspSettings.KEY_ENABLE_EPG || key == HtspSettings.KEY_EPG_MAX_TIME) applyNow()
+            if (key == HtspSettings.KEY_HOME_PREVIEW && prefs?.getBoolean(key, false) == false) {
+                val context = activity?.applicationContext ?: return
+                scope.launch(Dispatchers.IO) { RecentChannelsPreview.remove(context) }
+            }
         }
 
         private fun applyNow() {

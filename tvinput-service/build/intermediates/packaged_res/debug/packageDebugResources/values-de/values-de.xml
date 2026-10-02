@@ -31,6 +31,8 @@
     <string name="pref_epg_sync_title">Programmübersicht synchronisieren</string>
     <string name="pref_force_stereo_summary">Mischt Mehrkanalton (z. B. 5.1) auf Stereo herunter. Nur ausschalten, wenn das Gerät Mehrkanalton ausgeben kann.</string>
     <string name="pref_force_stereo_title">Stereo erzwingen</string>
+    <string name="pref_home_preview_summary">Zeigt die zuletzt gesehenen Sender als Kanal auf dem Startbildschirm des Launchers.</string>
+    <string name="pref_home_preview_title">Startbildschirm-Kanal</string>
     <string name="pref_profile_current">Aktuelles Profil: %1$s</string>
     <string name="pref_profile_loading">Profile werden vom Server geladen …</string>
     <string name="pref_profile_summary">Tvheadend-Streamingprofil für die Wiedergabe</string>
@@ -41,6 +43,8 @@
     <string name="pref_server_title">Tvheadend-Server</string>
     <string name="pref_tunneling_summary">Leitet das Video direkt vom Hardware-Decoder zum Bildschirm. Dies führt bei Timeshift zu unerwartetem Verhalten.</string>
     <string name="pref_tunneling_title">Tunnel-Modus</string>
+    <string name="preview_recent_channels">Zuletzt gesehen</string>
+    <string name="preview_recent_channels_description">Zuletzt gesehene Sender</string>
     <string name="server_htsp_port">HTSP-Port</string>
     <string name="server_htsp_port_invalid">Ungültiger Port</string>
     <string name="server_http_port">HTTP-Port</string>

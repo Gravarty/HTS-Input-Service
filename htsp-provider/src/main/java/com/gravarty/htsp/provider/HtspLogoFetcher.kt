@@ -46,6 +46,8 @@ object HtspLogoFetcher {
 
             context.contentResolver.openOutputStream(TvContract.buildChannelLogoUri(channelDbId))
                 ?.use { it.write(bytes) } ?: return@withContext false
+            // the home-screen tile (tvinput-service ChannelTileProvider) is rendered from this logo
+            java.io.File(context.cacheDir, "tiles").listFiles { f -> f.name.startsWith("$channelDbId-") }?.forEach { it.delete() }
             true
         } catch (e: Exception) {
             HtspLog.e("Logo failed for '$url': ${e.message}")

@@ -22,6 +22,12 @@
         android:title="@string/pref_server_title"
         android:summary="@string/pref_server_summary" />
 
+    <CheckBoxPreference
+        android:key="home_preview"
+        android:title="@string/pref_home_preview_title"
+        android:summary="@string/pref_home_preview_summary"
+        android:defaultValue="false" />
+
     <PreferenceCategory android:title="@string/pref_category_epg">
         <CheckBoxPreference
             android:key="enable_epg"
