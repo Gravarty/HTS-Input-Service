@@ -1,7 +1,7 @@
 <libraries>
   <library
       name=":@@:htsp-core"
-      jars="/Users/dennis/Downloads/HTS-Input-Service/htsp-core/build/libs/htsp-core.jar"
+      jars="/Users/dennis/Desktop/HTS-Input-Service-optimized/htsp-core/build/libs/htsp-core.jar"
       resolved="::"/>
   <library
       name=":@@:htsp-provider::release"

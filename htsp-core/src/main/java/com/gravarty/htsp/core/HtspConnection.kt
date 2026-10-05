@@ -12,8 +12,8 @@ import kotlinx.coroutines.sync.withLock
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
+import com.gravarty.htsp.core.model.HtspMuxPacket
 import java.net.Socket
-import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
@@ -38,9 +38,9 @@ class HtspConnection(
     private val writeLock = Any()
 
     /** Direct muxpkt receivers per subscription, called on the read thread (pvr.hts style). */
-    private val packetHandlers = java.util.concurrent.ConcurrentHashMap<Long, (HtsMessage) -> Unit>()
+    private val packetHandlers = java.util.concurrent.ConcurrentHashMap<Long, (HtspMuxPacket) -> Unit>()
 
-    fun setPacketHandler(subscriptionId: Long, handler: ((HtsMessage) -> Unit)?) {
+    fun setPacketHandler(subscriptionId: Long, handler: ((HtspMuxPacket) -> Unit)?) {
         if (handler == null) packetHandlers.remove(subscriptionId) else packetHandlers[subscriptionId] = handler
     }
 
@@ -204,27 +204,44 @@ class HtspConnection(
         }
     }
 
+    /** Reused by readLoop(); grows to the largest message seen (usually an I-frame). */
+    private var readBuffer = ByteArray(256 * 1024)
+
     private suspend fun readLoop() {
         val inStream = input ?: return
         try {
             while (socket?.isConnected == true && !socket!!.isClosed) {
                 val length = inStream.readInt()
-                val payload = ByteArray(length)
-                inStream.readFully(payload)
+                // One reused read buffer instead of a new array per message: video packets are
+                // tens of KB each, and on low-memory devices the per-packet arrays made the GC
+                // run every 2-5 s. A directly delivered muxpkt is copied into the SampleQueue
+                // before the next message is read, so its payload view may point into this buffer.
+                if (length > readBuffer.size) readBuffer = ByteArray(maxOf(length, readBuffer.size * 2))
+                inStream.readFully(readBuffer, 0, length)
 
-                val msg = HtsMessageCodec.decode(ByteBuffer.wrap(payload))
+                // Hot path for live TV: bypass the general Map<String, Any> decoder entirely.
+                if (packetHandlers.isNotEmpty()) {
+                    val packet = HtspMuxPacket.fromHtsPayload(readBuffer, 0, length)
+                    if (packet != null) {
+                        val handler = packetHandlers[packet.subscriptionId]
+                        if (handler != null) {
+                            handler(packet)
+                            continue
+                        }
+                    }
+                }
+
+                // Everything else may be kept (flows, replies, EPG), so it gets its own copy.
+                val payload = readBuffer.copyOf(length)
+                val msg = HtsMessageCodec.decode(payload)
                 val seq = msg.seq
 
-                if (seq != null && pendingRequests.containsKey(seq)) {
-                    pendingRequests.remove(seq)?.complete(msg)
-                } else if (msg.method == "muxpkt" && packetHandlers.isNotEmpty() &&
-                    msg.getLong("subscriptionId")?.let { packetHandlers[it] }?.invoke(msg) != null
-                ) {
-                    // delivered directly on this read thread (setting "direct packet delivery")
-                } else {
-                    _asyncMessages.emit(msg)
-                    listener?.onAsyncMessage(msg)
+                if (seq != null) {
+                    if (pendingRequests.remove(seq)?.complete(msg) == true) continue
                 }
+
+                _asyncMessages.emit(msg)
+                listener?.onAsyncMessage(msg)
             }
         } catch (e: Exception) {
             System.err.println("[HTSP] Read loop error: ${e.message}")

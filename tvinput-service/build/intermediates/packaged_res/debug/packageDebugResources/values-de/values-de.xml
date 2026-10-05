@@ -24,6 +24,8 @@
     <string name="pref_channels_loading">Sender werden gezählt …</string>
     <string name="pref_channels_radio_title">Radio-Sender</string>
     <string name="pref_channels_tv_title">TV-Sender</string>
+    <string name="pref_detailed_errors_summary">Meldet Fehler wie „Kein Signal“, „Kein freier Tuner“ oder „Sender verschlüsselt“ an die TV-App. Benötigt Live Channels Extended.</string>
+    <string name="pref_detailed_errors_title">Genauere Fehlermeldungen</string>
     <string name="pref_direct_packets_summary">Übergibt Videopakete ohne Zwischenpuffer an den Player, das senkt die CPU-Last. Gilt ab dem nächsten Umschalten.</string>
     <string name="pref_direct_packets_title">Direkte Paketübergabe</string>
     <string name="pref_epg_max_time_summary">Wie weit im Voraus Programminformationen geladen werden</string>
@@ -41,6 +43,8 @@
     <string name="pref_screen_title">HTS Einstellungen</string>
     <string name="pref_server_summary">Serveradresse und Anmeldung</string>
     <string name="pref_server_title">Tvheadend-Server</string>
+    <string name="pref_signal_status_summary">Sendet Signalqualität, Pegel und Fehlerrate von Tvheadend an die TV-App. Benötigt Live Channels Extended.</string>
+    <string name="pref_signal_status_title">Signalwerte</string>
     <string name="pref_tunneling_summary">Leitet das Video direkt vom Hardware-Decoder zum Bildschirm. Dies führt bei Timeshift zu unerwartetem Verhalten.</string>
     <string name="pref_tunneling_title">Tunnel-Modus</string>
     <string name="preview_recent_channels">Zuletzt gesehen</string>

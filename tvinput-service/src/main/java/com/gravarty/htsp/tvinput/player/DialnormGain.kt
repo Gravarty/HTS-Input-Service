@@ -10,10 +10,10 @@ import java.nio.ByteOrder
 import kotlin.math.pow
 
 /**
- * Undoes the dialogue normalization a hardware AC3/E-AC3 decoder applies (it attenuates the
- * programme to -31 dBFS dialogue level using the stream's "dialnorm"). Kodi decodes with
- * ffmpeg, which does not apply dialnorm; without this AC3 channels play e.g. 8 dB quieter
- * than MP2 channels (dialnorm -23). Gain = 31 - dialnorm dB; 0 dB for other codecs.
+ * Hardware Dolby decoders apply the stream's dialnorm (programme level brought to -31 dBFS),
+ * MP2 is not changed - measured on the JVC/MTK TV: RTL SD -25.3 dBFS, RTL HD (AC3, dialnorm -23)
+ * -33.7 dBFS. To play AC3 at the same level as MP2 (like Kodi/ffmpeg, which ignores dialnorm),
+ * hardware-decoded AC3 is raised by 31 - dialnorm dB. ffmpeg output is left unchanged.
  * The value is set by HtspMediaPeriod from the AC3 frame headers of the playing track.
  */
 object DialnormGain {
@@ -28,6 +28,7 @@ object DialnormGain {
 
     /** dialnorm 1..31 (dB below full scale); 0 = unknown / not AC3 -> no gain */
     fun setDialnorm(dialnorm: Int) {
+        // e.g. dialnorm -23 -> +8 dB
         gain = if (dialnorm in 1..31) 10f.pow((31 - dialnorm) / 20f) else 1f
     }
 
@@ -76,6 +77,10 @@ class DialnormGainProcessor : BaseAudioProcessor() {
         return inputAudioFormat
     }
 
+    // TEMPORARY diagnostic: output level (RMS dBFS) every 10 s, error log = visible in release
+    private var sumSquares = 0.0
+    private var samples = 0L
+
     override fun queueInput(inputBuffer: ByteBuffer) {
         val remaining = inputBuffer.remaining()
         if (remaining == 0) return
@@ -86,12 +91,27 @@ class DialnormGainProcessor : BaseAudioProcessor() {
             while (inputBuffer.hasRemaining()) {
                 val v = (inputBuffer.short * gain).toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt())
                 out.putShort(v.toShort())
+                val f = v / 32768.0
+                sumSquares += f * f; samples++
             }
         } else {
             while (inputBuffer.hasRemaining()) {
-                out.putFloat((inputBuffer.float * gain).coerceIn(-1f, 1f))
+                val v = (inputBuffer.float * gain).coerceIn(-1f, 1f)
+                out.putFloat(v)
+                sumSquares += v.toDouble() * v; samples++
             }
         }
         out.flip()
+
+        val window = inputAudioFormat.sampleRate.toLong() * inputAudioFormat.channelCount * 10
+        if (window > 0 && samples >= window) {
+            val db = 10 * kotlin.math.log10(sumSquares / samples + 1e-12)
+            com.gravarty.htsp.provider.HtspLog.e(
+                "LEVEL %.1f dBFS (%d ch, gain %.2f, software %b)".format(
+                    db, inputAudioFormat.channelCount, gain, DialnormGain.softwareDecoder
+                )
+            )
+            sumSquares = 0.0; samples = 0
+        }
     }
 }

@@ -46,6 +46,8 @@
     <string name="pref_channels_tv_title">TV channels</string>
     <string name="pref_default_epg_max_time" translatable="false">259200</string>
     <string name="pref_default_htsp_stream_profile" translatable="false">htsp</string>
+    <string name="pref_detailed_errors_summary">Reports errors such as “no signal”, “no free tuner” or “channel scrambled” to the TV app. Requires Live Channels Extended.</string>
+    <string name="pref_detailed_errors_title">Detailed error messages</string>
     <string name="pref_direct_packets_summary">Passes video packets to the player without an intermediate buffer, which lowers CPU load. Applies from the next channel switch.</string>
     <string name="pref_direct_packets_title">Direct packet delivery</string>
     <string name="pref_epg_max_time_summary">How far in advance program information is loaded</string>
@@ -63,6 +65,8 @@
     <string name="pref_screen_title">HTS Settings</string>
     <string name="pref_server_summary">Server address and login</string>
     <string name="pref_server_title">Tvheadend server</string>
+    <string name="pref_signal_status_summary">Sends signal quality, level and error rate from Tvheadend to the TV app. Requires Live Channels Extended.</string>
+    <string name="pref_signal_status_title">Signal values</string>
     <string name="pref_tunneling_summary">Sends video directly from the hardware decoder to the screen. This causes unexpected behavior with timeshift.</string>
     <string name="pref_tunneling_title">Tunnel mode</string>
     <string name="preview_recent_channels">Recently watched</string>

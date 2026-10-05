@@ -56,13 +56,11 @@ class HtspSubscription(
 
     init {
         if (directPackets) {
-            connection.setPacketHandler(subscriptionId) { msg ->
+            connection.setPacketHandler(subscriptionId) { packet ->
                 // Runs on the read thread: a failing packet must not end the connection
                 try {
-                    HtspMuxPacket.fromHtsMessage(msg)?.let { packet ->
-                        packetListener?.invoke(packet)
-                        packetSink?.invoke(packet)
-                    }
+                    packetListener?.invoke(packet)
+                    packetSink?.invoke(packet)
                 } catch (e: Exception) {
                     System.err.println("[HTSP] Packet dropped (subscription $subscriptionId): $e")
                 }

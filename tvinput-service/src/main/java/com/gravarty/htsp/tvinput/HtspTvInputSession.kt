@@ -25,10 +25,13 @@ import android.media.MediaFormat
 import android.os.Build
 import android.os.Handler
 import androidx.media3.common.Format
+import androidx.media3.common.MimeTypes
 import androidx.media3.exoplayer.Renderer
 import androidx.media3.exoplayer.audio.AudioRendererEventListener
 import androidx.media3.exoplayer.audio.MediaCodecAudioRenderer
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
+import androidx.media3.exoplayer.video.MediaCodecVideoRenderer
+import androidx.media3.exoplayer.video.VideoRendererEventListener
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.extractor.DefaultExtractorsFactory
@@ -39,8 +42,6 @@ import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioSink
 import com.gravarty.htsp.tvinput.player.PcmOnlyAudioSink
 import com.gravarty.htsp.tvinput.player.StereoDownmix
-import com.gravarty.htsp.tvinput.player.DialnormGainProcessor
-import com.gravarty.htsp.tvinput.player.DialnormGain
 import androidx.media3.decoder.ffmpeg.FfmpegAudioRenderer
 import com.gravarty.htsp.core.HtspConnection
 import com.gravarty.htsp.core.HtspSettings
@@ -115,9 +116,61 @@ class HtspTvInputSession(
         ioScope.cancel()
     }
 
+    private var subscriptionErrorShown = false
+
+    /** Setting "signal values" (needs a TV app that shows them) */
+    private val signalStatusEnabled: Boolean
+        get() = context.getSharedPreferences(HtspSettings.PREF_NAME, Context.MODE_PRIVATE)
+            .getBoolean(HtspSettings.KEY_SIGNAL_STATUS, false)
+
+    /** Setting "detailed error messages" (needs a TV app that shows these reasons) */
+    private val detailedErrors: Boolean
+        get() = context.getSharedPreferences(HtspSettings.PREF_NAME, Context.MODE_PRIVATE)
+            .getBoolean(HtspSettings.KEY_DETAILED_ERRORS, false)
+
+    /**
+     * Like pvr.hts Subscription::ParseSubscriptionStatus: "subscriptionError" is absent when
+     * everything is fine. pvr.hts shows a Kodi notification; with TIF the TV app shows the
+     * matching "video unavailable" reason.
+     */
+    private fun onSubscriptionStatus(error: String?) {
+        if (error == null) {
+            if (subscriptionErrorShown) {
+                subscriptionErrorShown = false
+                // picture already running again: show it; otherwise the first frame does
+                if (exoPlayer?.playbackState == Player.STATE_READY) notifyVideoAvailable()
+            }
+            return
+        }
+        val reason = when (error) {
+            "badSignal" -> TvInputManager.VIDEO_UNAVAILABLE_REASON_WEAK_SIGNAL
+            "noFreeAdapter", "userLimit" ->
+                if (Build.VERSION.SDK_INT >= 30) TvInputManager.VIDEO_UNAVAILABLE_REASON_INSUFFICIENT_RESOURCE
+                else TvInputManager.VIDEO_UNAVAILABLE_REASON_UNKNOWN
+            "scrambled" ->
+                if (Build.VERSION.SDK_INT >= 30) TvInputManager.VIDEO_UNAVAILABLE_REASON_CAS_UNKNOWN
+                else TvInputManager.VIDEO_UNAVAILABLE_REASON_UNKNOWN
+            else -> TvInputManager.VIDEO_UNAVAILABLE_REASON_UNKNOWN // tuningFailed, userAccess, unknown
+        }
+        HtspLog.e("Subscription error: $error -> video unavailable reason $reason")
+        subscriptionErrorShown = true
+        notifyVideoUnavailable(reason)
+    }
+
+    private var zapStartMs = 0L // TEMPORARY zap time
+
     override fun onSetSurface(surface: Surface?): Boolean {
+        HtspLog.i("onSetSurface ${surface?.let { "valid=${it.isValid} ${System.identityHashCode(it)}" }} " +
+            "(player ${if (exoPlayer != null) "running" else "none"})")
         this.surface = surface
-        exoPlayer?.setVideoSurface(surface)
+        exoPlayer?.let { player ->
+            player.setVideoSurface(surface)
+            // Player stopped by a decoder error on the destroyed surface: resume on the new one
+            if (surface != null && surface.isValid && player.playerError != null) {
+                HtspLog.i("Resuming after surface loss")
+                player.prepare()
+            }
+        }
         return true
     }
 
@@ -128,6 +181,7 @@ class HtspTvInputSession(
     override fun onTune(channelUri: Uri?): Boolean {
         if (channelUri == null) return false
 
+        zapStartMs = android.os.SystemClock.elapsedRealtime() // TEMPORARY zap time
         notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_TUNING)
         releasePlayerAndSubscription()
 
@@ -149,7 +203,7 @@ class HtspTvInputSession(
 
             HtspLog.i("Connected, subscribing (profile='$profile')")
             val direct = context.getSharedPreferences(HtspSettings.PREF_NAME, Context.MODE_PRIVATE)
-                .getBoolean(HtspSettings.KEY_DIRECT_PACKETS, false)
+                .getBoolean(HtspSettings.KEY_DIRECT_PACKETS, true)
             val sub = HtspSubscription(connection, directPackets = direct)
             subscription = sub
 
@@ -179,6 +233,11 @@ class HtspTvInputSession(
                                     }
                                 }
                                 HtspLog.i("<- ${msg.method} $fields")
+                            }
+                            // Signal values for the TV app's signal display (SignalStatusProvider)
+                            if (msg.method == "signalStatus" && signalStatusEnabled) SignalStatusStore.update(msg)
+                            if (detailedErrors && msg.method == "subscriptionStatus") {
+                                onSubscriptionStatus(msg.getString("subscriptionError"))
                             }
                         }
                         sub.handleMessage(msg)
@@ -234,22 +293,36 @@ class HtspTvInputSession(
                 enableAudioTrackPlaybackParams: Boolean
             ): AudioSink = PcmOnlyAudioSink(
                 DefaultAudioSink.Builder(context)
-                    // "force stereo": downmix in the plugin, the MTK AC3 decoder ignores the
-                    // decoder hint below and outputs 6 channels
-                    // + dialnorm gain for AC3/E-AC3 (Kodi/ffmpeg does not apply dialnorm)
-                    .setAudioProcessors(
-                        if (forceStereo) arrayOf(StereoDownmix.processor(), DialnormGainProcessor())
-                        else arrayOf(DialnormGainProcessor())
-                    )
+                    // "force stereo": downmix in the plugin (hardware decoders may ignore the
+                    // channel-count hint below and output 6 channels)
+                    .setAudioProcessors(if (forceStereo) arrayOf(StereoDownmix.processor()) else emptyArray())
                     .setEnableFloatOutput(enableFloatOutput)
                     .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
                     .build()
             )
 
-            // Setting "force stereo" (default on, like Kodi's default 2.0 speaker layout): the audio
-            // decoder is asked for at most 2 channels (MediaFormat.KEY_MAX_OUTPUT_CHANNEL_COUNT,
-            // Android 11+), so e.g. AC3 5.1 is downmixed by the decoder with the stream's own
-            // downmix metadata. Off: output as decoded. This TV cannot create a 6-channel AudioTrack.
+            // Surface changes (TV app closed/reopened) re-create the video codec instead of
+            // MediaCodec.setOutputSurface(): some MTK decoders keep rendering to the old, invisible
+            // surface. ExoPlayer does the same for its list of known devices
+            // (codecNeedsSetOutputSurfaceWorkaround); costs a moment until the next keyframe.
+            override fun buildVideoRenderers(
+                context: Context,
+                extensionRendererMode: Int,
+                mediaCodecSelector: MediaCodecSelector,
+                enableDecoderFallback: Boolean,
+                eventHandler: Handler,
+                eventListener: VideoRendererEventListener,
+                allowedVideoJoiningTimeMs: Long,
+                out: ArrayList<Renderer>
+            ) {
+                out.add(object : MediaCodecVideoRenderer(
+                    context, mediaCodecSelector, allowedVideoJoiningTimeMs, enableDecoderFallback,
+                    eventHandler, eventListener, MAX_DROPPED_VIDEO_FRAMES_TO_NOTIFY
+                ) {
+                    override fun codecNeedsSetOutputSurfaceWorkaround(name: String): Boolean = true
+                })
+            }
+
             override fun buildAudioRenderers(
                 context: Context,
                 extensionRendererMode: Int,
@@ -260,34 +333,29 @@ class HtspTvInputSession(
                 eventListener: AudioRendererEventListener,
                 out: ArrayList<Renderer>
             ) {
-                // ffmpeg decodes without dialnorm (like Kodi); the dialnorm gain is only for
-                // hardware decoders, so it is bypassed while the ffmpeg decoder is in use
-                val listener = object : AudioRendererEventListener by eventListener {
-                    override fun onAudioDecoderInitialized(
-                        decoderName: String, initializedTimestampMs: Long, initializationDurationMs: Long
-                    ) {
-                        DialnormGain.softwareDecoder = decoderName.startsWith("ffmpeg")
-                        eventListener.onAudioDecoderInitialized(decoderName, initializedTimestampMs, initializationDurationMs)
-                    }
+                // AC3 / E-AC3 always via ffmpeg, like Kodi: hardware Dolby decoders differ per
+                // device in applying dialnorm (measured: Vestel -8 dB, PEAQ none), ffmpeg never
+                // applies it, so AC3 plays at the same level as MP2 on every device.
+                // All other formats stay on the hardware decoders.
+                val selector = MediaCodecSelector { mimeType, requiresSecure, requiresTunneling ->
+                    if (mimeType == MimeTypes.AUDIO_AC3 || mimeType == MimeTypes.AUDIO_E_AC3) emptyList()
+                    else mediaCodecSelector.getDecoderInfos(mimeType, requiresSecure, requiresTunneling)
                 }
-                if (!forceStereo) {
-                    super.buildAudioRenderers(
-                        context, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF, mediaCodecSelector, enableDecoderFallback,
-                        audioSink, eventHandler, listener, out
-                    )
-                } else out.add(object : MediaCodecAudioRenderer(
-                    context, mediaCodecSelector, enableDecoderFallback, eventHandler, listener, audioSink
+                out.add(object : MediaCodecAudioRenderer(
+                    context, selector, enableDecoderFallback, eventHandler, eventListener, audioSink
                 ) {
+                    // "force stereo": ask the decoder for at most 2 channels (Android 11+)
                     override fun getMediaFormat(
                         format: Format, codecMimeType: String, codecMaxInputSize: Int, codecOperatingRate: Float
                     ): MediaFormat =
                         super.getMediaFormat(format, codecMimeType, codecMaxInputSize, codecOperatingRate).apply {
-                            if (Build.VERSION.SDK_INT >= 30) setInteger(MediaFormat.KEY_MAX_OUTPUT_CHANNEL_COUNT, 2)
+                            if (forceStereo && Build.VERSION.SDK_INT >= 30) {
+                                setInteger(MediaFormat.KEY_MAX_OUTPUT_CHANNEL_COUNT, 2)
+                            }
                         }
                 })
-                // Fallback after the hardware decoder: used only for formats MediaCodec cannot decode
-                // (e.g. AC3 on sticks without a Dolby decoder) - Kodi decodes everything with ffmpeg
-                out.add(FfmpegAudioRenderer(eventHandler, listener, audioSink))
+                // ffmpeg: AC3 / E-AC3, and any other format the device has no decoder for
+                out.add(FfmpegAudioRenderer(eventHandler, eventListener, audioSink))
             }
         }
         val player = ExoPlayer.Builder(context, renderers).build()
@@ -308,6 +376,8 @@ class HtspTvInputSession(
                     .setMaxAudioChannelCount(if (forceStereo) 2 else Int.MAX_VALUE)
             )
         }
+        var firstFrameShown = false
+        var buffering = false
         player.addListener(object : Player.Listener {
             override fun onTracksChanged(tracks: androidx.media3.common.Tracks) {
                 tracks.groups.forEach { g ->
@@ -326,15 +396,35 @@ class HtspTvInputSession(
 
             override fun onRenderedFirstFrame() {
                 HtspLog.i("First frame rendered")
+                firstFrameShown = true
+                // TEMPORARY: zap time, error log = visible in release
+                if (zapStartMs > 0) {
+                    HtspLog.e("ZAP ${android.os.SystemClock.elapsedRealtime() - zapStartMs} ms")
+                    zapStartMs = 0
+                }
                 notifyVideoAvailable()
             }
 
             override fun onPlaybackStateChanged(state: Int) {
                 HtspLog.i("Player state $state (1 idle, 2 buffering, 3 ready, 4 ended), buffered ${player.bufferedPosition} ms")
-                if (exoPlayer === player && state == Player.STATE_READY &&
-                    !player.currentTracks.containsType(C.TRACK_TYPE_VIDEO)
-                ) {
-                    notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_AUDIO_ONLY)
+                if (exoPlayer !== player) return
+                when (state) {
+                    // Re-buffering after playback started: let the TV app show its loading state
+                    // (TIF: VIDEO_UNAVAILABLE_REASON_BUFFERING). Before the first frame the
+                    // TUNING state from onTune is still shown.
+                    // (a server error such as "no signal" stays shown instead of the loading state)
+                    Player.STATE_BUFFERING -> if (firstFrameShown && !buffering && !subscriptionErrorShown) {
+                        buffering = true
+                        notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_BUFFERING)
+                    }
+                    Player.STATE_READY -> {
+                        if (!player.currentTracks.containsType(C.TRACK_TYPE_VIDEO)) {
+                            notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_AUDIO_ONLY)
+                        } else if (buffering && !subscriptionErrorShown) {
+                            notifyVideoAvailable()
+                        }
+                        buffering = false
+                    }
                 }
             }
 
@@ -343,6 +433,14 @@ class HtspTvInputSession(
                     // e.g. "Player release timed out" while switching channels: the old player
                     // is already gone, the new channel must not show "video unavailable"
                     HtspLog.e("Ignored error of released player: ${error.errorCodeName}")
+                    return
+                }
+                val currentSurface = surface
+                if (currentSurface == null || !currentSurface.isValid) {
+                    // The system destroyed the surface before onSetSurface(null) arrived (TV app
+                    // closed): the decoder failed on the dead surface, not on the stream.
+                    // No "video unavailable"; onSetSurface() with a new surface prepares again.
+                    HtspLog.e("Decoder error without valid surface (ignored): ${error.errorCodeName}")
                     return
                 }
                 HtspLog.e("Player error: ${error.errorCodeName}", error)
@@ -748,6 +846,7 @@ class HtspTvInputSession(
         routingJob = null
 
         val sub = subscription ?: return
+        SignalStatusStore.clear()
         subscription = null
         sub.release()
         // Own scope: must still run when the session scopes are cancelled in onRelease().
@@ -761,3 +860,6 @@ class HtspTvInputSession(
         const val TRICK_STEP_MS = 500L
     }
 }
+
+/** Same value as DefaultRenderersFactory.MAX_DROPPED_VIDEO_FRAME_COUNT_TO_NOTIFY */
+private const val MAX_DROPPED_VIDEO_FRAMES_TO_NOTIFY = 50

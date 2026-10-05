@@ -25,8 +25,9 @@ class HtspRepository {
     val tags: StateFlow<Map<Long, Tag>> = _tags.asStateFlow()
 
     private val eventStore = HashMap<Long, Event>()
-    private val _events = MutableStateFlow<Map<Long, Event>>(emptyMap())
-    val events: StateFlow<Map<Long, Event>> = _events.asStateFlow()
+    // No published copy of the whole EPG: before, every eventAdd/Update/Delete after the
+    // initial sync copied the complete map (tens of thousands of entries) into a new HashMap,
+    // only for the full sync to read it. Readers take a snapshot when they need one.
 
     private val _dvrEntries = MutableStateFlow<Map<Long, DvrEntry>>(emptyMap())
     val dvrEntries: StateFlow<Map<Long, DvrEntry>> = _dvrEntries.asStateFlow()
@@ -74,7 +75,6 @@ class HtspRepository {
                 val event = Event.fromHtsMessage(msg)
                 if (event.id != 0L) {
                     eventStore[event.id] = event
-                    publishEventsIfLive()
                 }
             }
             "eventUpdate" -> {
@@ -82,13 +82,11 @@ class HtspRepository {
                 val updated = eventStore[eventId]?.merge(msg) ?: Event.fromHtsMessage(msg)
                 if (updated.id != 0L) {
                     eventStore[updated.id] = updated
-                    publishEventsIfLive()
                 }
             }
             "eventDelete" -> {
                 val id = msg.getLong("eventId") ?: return
                 eventStore.remove(id)
-                publishEventsIfLive()
             }
             "dvrEntryAdd", "dvrEntryUpdate" -> {
                 val id = msg.getLong("id") ?: return
@@ -118,15 +116,27 @@ class HtspRepository {
                 _dvrEntries.value = _dvrEntries.value - id
             }
             "initialSyncCompleted" -> {
-                _events.value = HashMap(eventStore)
                 _isInitialSyncCompleted.value = true
             }
         }
     }
 
-    private fun publishEventsIfLive() {
-        if (_isInitialSyncCompleted.value) _events.value = HashMap(eventStore)
+    /**
+     * Memory: drop the descriptions (most of the EPG's ~26 MB) after they were written to the
+     * TvProvider by the full sync. Live updates restore a missing description from the TvProvider
+     * row (HtspSyncManager.applyChanges), so every programme keeps it - same result as keeping
+     * it here, like pvr.hts' Schedules.
+     */
+    @Synchronized
+    fun stripEventDescriptions() {
+        for (entry in eventStore.entries) {
+            if (entry.value.description != null) entry.setValue(entry.value.copy(description = null))
+        }
     }
+
+    /** Snapshot of all events (full sync). */
+    @Synchronized
+    fun eventsSnapshot(): List<Event> = ArrayList(eventStore.values)
 
     @Synchronized
     fun getEvents(ids: Collection<Long>): List<Event> = ids.mapNotNull { eventStore[it] }
@@ -137,7 +147,6 @@ class HtspRepository {
         _channels.value = emptyMap()
         _tags.value = emptyMap()
         eventStore.clear()
-        _events.value = emptyMap()
         _dvrEntries.value = emptyMap()
         _autorecEntries.value = emptyMap()
         _timerecEntries.value = emptyMap()

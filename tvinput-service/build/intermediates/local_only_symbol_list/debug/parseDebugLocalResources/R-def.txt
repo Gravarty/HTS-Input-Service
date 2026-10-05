@@ -46,6 +46,8 @@ string pref_channels_radio_title
 string pref_channels_tv_title
 string pref_default_epg_max_time
 string pref_default_htsp_stream_profile
+string pref_detailed_errors_summary
+string pref_detailed_errors_title
 string pref_direct_packets_summary
 string pref_direct_packets_title
 string pref_epg_max_time_summary
@@ -63,6 +65,8 @@ string pref_profile_unavailable
 string pref_screen_title
 string pref_server_summary
 string pref_server_title
+string pref_signal_status_summary
+string pref_signal_status_title
 string pref_tunneling_summary
 string pref_tunneling_title
 string preview_recent_channels

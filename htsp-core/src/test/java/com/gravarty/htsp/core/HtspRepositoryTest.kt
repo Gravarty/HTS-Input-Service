@@ -38,7 +38,7 @@ class HtspRepositoryTest {
         assertEquals("Das Erste HD", channel?.name)
         assertEquals(1, channel?.number)
 
-        val event = repo.events.value[5001L]
+        val event = repo.getEvents(listOf(5001L)).firstOrNull()
         assertEquals("Tagesschau", event?.title)
         assertEquals(101L, event?.channelId)
 

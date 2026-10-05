@@ -1,5 +1,6 @@
 package com.gravarty.htsp.tvinput.player
 
+import android.util.SparseArray
 import com.gravarty.htsp.provider.HtspLog
 
 import androidx.annotation.OptIn
@@ -30,7 +31,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.IOException
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Push-based MediaPeriod, following pvr.hts HTSPDemuxer: muxpkt payloads go unchanged
@@ -57,28 +57,29 @@ class HtspMediaPeriod(
         val dvbParser: DvbParser? = null
     ) {
         @Volatile var started = !isVideo
+        @Volatile var enabled = false
+        val sampleBuffer = ParsableByteArray()
         val isMpeg2 = format.sampleMimeType == MimeTypes.VIDEO_MPEG2
         val isText = MimeTypes.getTrackType(format.sampleMimeType) == C.TRACK_TYPE_TEXT
-        val isDolby = format.sampleMimeType == MimeTypes.AUDIO_AC3 || format.sampleMimeType == MimeTypes.AUDIO_E_AC3
-        var dialnorm = 0
         var aspectCode = -1        // last confirmed aspect_ratio_information
         var pendingAspectCode = -1
         var pendingCount = 0
         var aacConfigured = !isAac
+        val isDolby = format.sampleMimeType == MimeTypes.AUDIO_AC3 || format.sampleMimeType == MimeTypes.AUDIO_E_AC3
+        var dolbyChannels = -1     // channel count from the last AC3/E-AC3 frame header
     }
 
-    private val tracks = ConcurrentHashMap<Int, Track>()
+    @Volatile private var tracks = SparseArray<Track>()
     private val cueEncoder = CueEncoder()
-    private val packetSink: (HtspMuxPacket) -> Unit = { onPacket(it) }
-    private val enabled: MutableSet<Int> = ConcurrentHashMap.newKeySet()
+    private val packetSink: (HtspMuxPacket) -> Unit = ::onPacket
     @Volatile private var trackGroups = TrackGroupArray.EMPTY
     @Volatile private var prepared = false
     @Volatile private var fatalError: Throwable? = null
 
     // pvr.hts: packets are ignored while a seek is pending (m_seektime != nullptr)
     @Volatile private var seeking = false
-    @Volatile private var seekPositionUs = 0L
     private val writeLock = Any()
+    @Volatile private var seekPositionUs = 0L
     private var job: Job? = null
     private var errorJob: Job? = null
 
@@ -101,7 +102,8 @@ class HtspMediaPeriod(
     }
 
     private fun buildTracks(streams: List<HtspStream>) {
-        val groups = ArrayList<TrackGroup>()
+        val groups = ArrayList<TrackGroup>(streams.size)
+        val newTracks = SparseArray<Track>(streams.size)
         for (stream in streams) {
             val sourceFormat = mapToFormat(stream) ?: continue
             val dvbParser = if (sourceFormat.sampleMimeType == MimeTypes.APPLICATION_DVBSUBS)
@@ -115,10 +117,11 @@ class HtspMediaPeriod(
             val queue = SampleQueue.createWithoutDrm(allocator)
             queue.format(format)
             val isVideo = MimeTypes.isVideo(format.sampleMimeType)
-            tracks[stream.index] = Track(stream.index, format, queue, isVideo,
-                format.sampleMimeType == MimeTypes.AUDIO_AAC, dvbParser)
+            newTracks.put(stream.index, Track(stream.index, format, queue, isVideo,
+                format.sampleMimeType == MimeTypes.AUDIO_AAC, dvbParser))
             groups.add(TrackGroup(stream.index.toString(), format))
         }
+        tracks = newTracks
         trackGroups = TrackGroupArray(*groups.toTypedArray())
     }
 
@@ -129,13 +132,17 @@ class HtspMediaPeriod(
     fun cancelSeek() { seeking = false }
 
     private fun onPacket(packet: HtspMuxPacket) {
+        // The lock is uncontended almost always (cost: a few ns per packet), but it keeps
+        // SampleQueue writes from overlapping with reset()/release() on the playback thread.
+        // The "seeking" check alone leaves a window: a packet that passed it can still be
+        // writing while seekToUs() resets the queue.
         synchronized(writeLock) { writePacket(packet) }
     }
 
     private fun writePacket(packet: HtspMuxPacket) {
         if (seeking) return
-        val track = tracks[packet.streamIndex] ?: return
-        if (track.index !in enabled) return
+        val track = tracks.get(packet.streamIndex) ?: return
+        if (!track.enabled) return
 
         if (!track.started) {
             if (!packet.isKeyframe) return
@@ -147,22 +154,67 @@ class HtspMediaPeriod(
         var data = packet.payload
         if (track.isAac) data = stripAdts(track, data) ?: return
         if (track.isMpeg2 && packet.isKeyframe) checkMpeg2Aspect(track, data)
-        if (track.isDolby) {
-            val dn = DialnormGain.parseDialnorm(data.array, data.offset, data.length)
-            if (dn != 0 && dn != track.dialnorm) { track.dialnorm = dn; DialnormGain.setDialnorm(dn) }
-        }
+        if (track.isDolby) checkDolbyChannels(track, data)
 
         track.dvbParser?.let { parser ->
             writeDvbCues(track, parser, data, timeUs)
             return
         }
 
-        // The only copy of the payload: from the received frame into the SampleQueue
-        val view = ParsableByteArray(data.array, data.offset + data.length)
-        view.setPosition(data.offset)
-        track.queue.sampleData(view, data.length)
+        // Reuse one parser buffer per track; SampleQueue still makes the required media-buffer copy.
+        track.sampleBuffer.reset(data.array, data.offset + data.length)
+        track.sampleBuffer.setPosition(data.offset)
+        track.queue.sampleData(track.sampleBuffer, data.length)
         val flags = if (track.isVideo && !packet.isKeyframe) 0 else C.BUFFER_FLAG_KEY_FRAME
         track.queue.sampleMetadata(timeUs, flags, data.length, 0, null)
+    }
+
+    /**
+     * AC3/E-AC3 can switch channel layout mid-stream (e.g. 2.0 -> 5.1 when a film starts) without
+     * a new subscriptionStart. The ffmpeg decoder sets up its resampler once and then reads
+     * missing channel planes (native null-pointer crash in swri_oldapi_conv_fltp_to_s16_nch).
+     * On a change the new channel count is written as a new Format, so ExoPlayer re-creates the
+     * decoder - like Kodi re-initialising its audio engine on a format change.
+     */
+    private fun checkDolbyChannels(track: Track, data: HtsBin) {
+        val channels = dolbyChannelCount(data)
+        if (channels <= 0 || channels == track.dolbyChannels) return
+        val first = track.dolbyChannels == -1
+        track.dolbyChannels = channels
+        if (first && channels == track.format.channelCount) return
+        HtspLog.i("Stream ${track.index}: Dolby channel count -> $channels")
+        track.queue.format(track.format.buildUpon().setChannelCount(channels).build())
+    }
+
+    /** Channels from an AC3 (A/52 5.4) or E-AC3 (Annex E) sync frame header: acmod + lfeon. */
+    private fun dolbyChannelCount(d: HtsBin): Int {
+        if (d.length < 8 || (d[0].toInt() and 0xFF) != 0x0B || (d[1].toInt() and 0xFF) != 0x77) return -1
+        val bsid = (d[5].toInt() and 0xFF) ushr 3
+        var bit = 16 // after the syncword
+        fun bits(n: Int): Int {
+            var v = 0
+            repeat(n) {
+                val b = d[bit ushr 3].toInt() and 0xFF
+                v = (v shl 1) or ((b ushr (7 - (bit and 7))) and 1)
+                bit++
+            }
+            return v
+        }
+        val acmod: Int
+        val lfe: Int
+        if (bsid <= 10) {
+            bits(16 + 2 + 6 + 5 + 3)            // crc1, fscod, frmsizecod, bsid, bsmod
+            acmod = bits(3)
+            if ((acmod and 1) != 0 && acmod != 1) bits(2) // cmixlev
+            if ((acmod and 4) != 0) bits(2)               // surmixlev
+            if (acmod == 2) bits(2)                       // dsurmod
+            lfe = bits(1)
+        } else if (bsid in 11..16) {
+            bits(2 + 3 + 11 + 2 + 2)            // strmtyp, substreamid, frmsiz, fscod, fscod2/numblkscod
+            acmod = bits(3)
+            lfe = bits(1)
+        } else return -1
+        return ACMOD_CHANNELS[acmod] + lfe
     }
 
     /**
@@ -253,7 +305,7 @@ class HtspMediaPeriod(
         for (i in selections.indices) {
             val old = streams[i] as? HtspSampleStream
             if (old != null && (selections[i] == null || !mayRetainStreamFlags[i])) {
-                enabled.remove(old.streamIndex)
+                tracks.get(old.streamIndex)?.enabled = false
                 streams[i] = null
             }
         }
@@ -262,20 +314,18 @@ class HtspMediaPeriod(
             if (streams[i] != null) continue
             val index = selection.trackGroup.id.toIntOrNull() ?: continue
             HtspLog.i("Selected stream $index (${selection.trackGroup.getFormat(0).sampleMimeType})")
-            val track = tracks[index] ?: continue
+            val track = tracks.get(index) ?: continue
             streams[i] = HtspSampleStream(index, track.queue)
             streamResetFlags[i] = true
-            enabled.add(index)
+            track.enabled = true
         }
-        // dialnorm gain only while a Dolby track plays; set again from its next frame header
-        val audio = enabled.mapNotNull { tracks[it] }.firstOrNull { MimeTypes.isAudio(it.format.sampleMimeType) }
-        if (audio == null || !audio.isDolby) DialnormGain.reset() else audio.dialnorm = 0
         return positionUs
     }
 
     override fun discardBuffer(positionUs: Long, toKeyframe: Boolean) {
-        for (index in enabled) {
-            tracks[index]?.queue?.discardTo(positionUs, toKeyframe, true)
+        for (i in 0 until tracks.size()) {
+            val track = tracks.valueAt(i)
+            if (track.enabled) track.queue.discardTo(positionUs, toKeyframe, true)
         }
     }
 
@@ -286,31 +336,36 @@ class HtspMediaPeriod(
      * are dropped and video waits for the next keyframe.
      */
     override fun seekToUs(positionUs: Long): Long {
+        // beginSeek() keeps packet delivery disabled until the queues have been reset.
         synchronized(writeLock) {
-            for (track in tracks.values) {
+            for (i in 0 until tracks.size()) {
+                val track = tracks.valueAt(i)
                 track.queue.reset(/* resetUpstreamFormat= */ false)
                 track.started = !track.isVideo
                 track.dvbParser?.reset()
             }
-            seekPositionUs = positionUs
-            seeking = false
         }
+        seekPositionUs = positionUs
+        seeking = false
         return positionUs
     }
 
     override fun getAdjustedSeekPositionUs(positionUs: Long, seekParameters: SeekParameters): Long = positionUs
 
     override fun getBufferedPositionUs(): Long {
-        if (!prepared || enabled.isEmpty()) return seekPositionUs
+        if (!prepared) return seekPositionUs
         var min = Long.MAX_VALUE
-        for (index in enabled) {
-            val track = tracks[index] ?: continue
+        var anyEnabled = false
+        for (i in 0 until tracks.size()) {
+            val track = tracks.valueAt(i)
+            if (!track.enabled) continue
+            anyEnabled = true
             if (track.isText) continue // sparse: subtitles must not hold back buffering
             val largest = track.queue.largestQueuedTimestampUs
             if (largest == Long.MIN_VALUE) return seekPositionUs
             if (largest < min) min = largest
         }
-        return if (min == Long.MAX_VALUE) seekPositionUs else maxOf(min, seekPositionUs)
+        return if (!anyEnabled || min == Long.MAX_VALUE) seekPositionUs else maxOf(min, seekPositionUs)
     }
 
     override fun getNextLoadPositionUs(): Long = getBufferedPositionUs()
@@ -377,9 +432,11 @@ class HtspMediaPeriod(
         if (subscription.packetSink === packetSink) subscription.packetSink = null
         job?.cancel()
         errorJob?.cancel()
-        tracks.values.forEach { it.queue.release() }
-        tracks.clear()
-        enabled.clear()
+        synchronized(writeLock) {
+            val oldTracks = tracks
+            tracks = SparseArray()
+            for (i in 0 until oldTracks.size()) oldTracks.valueAt(i).queue.release()
+        }
     }
 
     private companion object {
@@ -390,3 +447,6 @@ class HtspMediaPeriod(
         )
     }
 }
+
+/** A/52 table 5.8: full-bandwidth channels per acmod */
+private val ACMOD_CHANNELS = intArrayOf(2, 1, 2, 3, 3, 4, 4, 5)

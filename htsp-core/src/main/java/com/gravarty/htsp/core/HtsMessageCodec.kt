@@ -131,8 +131,14 @@ object HtsMessageCodec {
 
     fun decode(buffer: ByteBuffer): HtsMessage {
         val start = buffer.arrayOffset() + buffer.position()
+        return decode(buffer.array(), start, buffer.remaining())
+    }
+
+    fun decode(a: ByteArray, offset: Int = 0, length: Int = a.size - offset): HtsMessage {
+        val start = offset.coerceAtLeast(0)
+        val end = (offset + length).coerceAtMost(a.size)
         val fields = LinkedHashMap<String, Any>()
-        decodeInto(buffer.array(), start, start + buffer.remaining(), fields, null)
+        decodeInto(a, start, end, fields, null)
         val method = fields["method"] as? String
         val seq = (fields["seq"] as? Number)?.toLong()
         return HtsMessage(method, seq, fields)
@@ -151,7 +157,7 @@ object HtsMessageCodec {
             val valLen = ((a[p + 2].toInt() and 0xFF) shl 24) or ((a[p + 3].toInt() and 0xFF) shl 16) or
                 ((a[p + 4].toInt() and 0xFF) shl 8) or (a[p + 5].toInt() and 0xFF)
             p += 6
-            val name = if (nameLen == 0) "" else String(a, p, nameLen, Charsets.UTF_8)
+            val name = if (nameLen == 0) "" else FieldNames.get(a, p, nameLen)
             p += nameLen
             val v = p
             p += valLen
@@ -180,5 +186,34 @@ object HtsMessageCodec {
             value = (value shl 8) or (a[i].toLong() and 0xFF)
         }
         return value
+    }
+}
+
+/**
+ * Field names repeat in every message (eventId, channelId, title, start ...). Instead of a new
+ * String per field, a small cache returns the existing instance when the bytes match. Only
+ * startup sync allocations change (tens of thousands of eventAdd messages); the decoded
+ * messages are identical. Thread-safe: each slot holds an immutable pair, replaced atomically.
+ */
+internal object FieldNames {
+    private class Entry(val bytes: ByteArray, val name: String)
+
+    private const val SIZE = 256 // power of two
+    private val slots = arrayOfNulls<Entry>(SIZE)
+
+    fun get(a: ByteArray, offset: Int, length: Int): String {
+        var h = length
+        for (i in offset until offset + length) h = 31 * h + a[i]
+        val index = h and (SIZE - 1)
+        val e = slots[index]
+        if (e != null && e.bytes.size == length) {
+            var same = true
+            for (i in 0 until length) if (e.bytes[i] != a[offset + i]) { same = false; break }
+            if (same) return e.name
+        }
+        val bytes = a.copyOfRange(offset, offset + length)
+        val name = String(bytes, Charsets.UTF_8)
+        slots[index] = Entry(bytes, name)
+        return name
     }
 }

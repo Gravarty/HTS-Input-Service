@@ -68,6 +68,12 @@
             android:name="com.gravarty.htsp.tvinput.ChannelTileProvider"
             android:authorities="com.gravarty.hts.tiles"
             android:exported="true" />
+
+        <!-- Signal values of the playing channel for the TV app (queried, nothing is pushed) -->
+        <provider
+            android:name="com.gravarty.htsp.tvinput.SignalStatusProvider"
+            android:authorities="com.gravarty.hts.signal"
+            android:exported="true" />
     </application>
 
 </manifest>

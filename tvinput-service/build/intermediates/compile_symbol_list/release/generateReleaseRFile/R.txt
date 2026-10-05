@@ -44,6 +44,8 @@ int string pref_channels_radio_title 0x0
 int string pref_channels_tv_title 0x0
 int string pref_default_epg_max_time 0x0
 int string pref_default_htsp_stream_profile 0x0
+int string pref_detailed_errors_summary 0x0
+int string pref_detailed_errors_title 0x0
 int string pref_direct_packets_summary 0x0
 int string pref_direct_packets_title 0x0
 int string pref_epg_max_time_summary 0x0
@@ -61,6 +63,8 @@ int string pref_profile_unavailable 0x0
 int string pref_screen_title 0x0
 int string pref_server_summary 0x0
 int string pref_server_title 0x0
+int string pref_signal_status_summary 0x0
+int string pref_signal_status_title 0x0
 int string pref_tunneling_summary 0x0
 int string pref_tunneling_title 0x0
 int string preview_recent_channels 0x0

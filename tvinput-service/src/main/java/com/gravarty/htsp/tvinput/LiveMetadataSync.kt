@@ -162,6 +162,7 @@ object LiveMetadataSync {
                 val writer = launch {
                     repository.isInitialSyncCompleted.first { it }
                     runCatching { syncManager.performSync() }
+                        .onSuccess { repository.stripEventDescriptions() } // written, free the memory
                         .onFailure { HtspLog.e("Live full sync failed: ${it.message}") }
                     while (isActive) {
                         changeSignal.receive()

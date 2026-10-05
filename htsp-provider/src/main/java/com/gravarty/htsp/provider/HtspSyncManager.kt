@@ -49,7 +49,7 @@ class HtspSyncManager(
         onProgress("Updating ${channels.size} channels...")
         val htspToDbId = syncBothInputs(channels)
 
-        val events = repository.events.value.values
+        val events = repository.eventsSnapshot()
         onProgress("Writing ${events.size} EPG events...")
         syncPrograms(htspToDbId, events)
 
@@ -92,15 +92,29 @@ class HtspSyncManager(
         // No selection allowed: read our program rows and match them by event ID
         val touched = (changedEventIds + deletedEventIds).mapTo(HashSet()) { it.toString() }
         val rows = ArrayList<Long>()
+        val storedDescriptions = HashMap<Long, String>()
         context.contentResolver.query(
             TvContract.Programs.CONTENT_URI,
-            arrayOf(TvContract.Programs._ID, TvContract.Programs.COLUMN_INTERNAL_PROVIDER_DATA),
+            arrayOf(
+                TvContract.Programs._ID, TvContract.Programs.COLUMN_INTERNAL_PROVIDER_DATA,
+                TvContract.Programs.COLUMN_SHORT_DESCRIPTION
+            ),
             null, null, null
         )?.use { c ->
-            while (c.moveToNext()) if (c.getString(1) in touched) rows.add(c.getLong(0))
+            while (c.moveToNext()) {
+                val key = c.getString(1)
+                if (key in touched) {
+                    rows.add(c.getLong(0))
+                    c.getString(2)?.let { d -> key?.toLongOrNull()?.let { storedDescriptions[it] = d } }
+                }
+            }
         }
         val removed = deleteRows(rows) { TvContract.buildProgramUri(it) }
-        val events = repository.getEvents(changedEventIds)
+        // The repository drops descriptions after the full sync (memory); an update without a
+        // new description keeps the one already written, as the in-memory merge did before.
+        val events = repository.getEvents(changedEventIds).map { e ->
+            if (e.description == null) storedDescriptions[e.id]?.let { e.copy(description = it) } ?: e else e
+        }
         val inserted = insertPrograms(htspToDbId, events)
         if (recordingsChanged || changedChannelIds.isNotEmpty()) syncRecordings(htspToDbId)
         HtspLog.i(

@@ -1,6 +1,6 @@
 <lint-module
     format="1"
-    dir="/Users/dennis/Downloads/HTS-Input-Service/htsp-provider"
+    dir="/Users/dennis/Desktop/HTS-Input-Service-optimized/htsp-provider"
     name=":htsp-provider"
     type="LIBRARY"
     maven="HTS:htsp-provider:unspecified"

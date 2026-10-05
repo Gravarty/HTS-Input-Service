@@ -33,8 +33,12 @@ data class HtspSettings(
         const val KEY_FORCE_STEREO = "force_stereo"
         /** "Recently watched" preview channel on the launcher home screen, boolean, default off */
         const val KEY_HOME_PREVIEW = "home_preview"
-        /** Direct packet delivery from the read thread to the player, boolean, default off */
+        /** Direct packet delivery from the read thread to the player, boolean, default on */
         const val KEY_DIRECT_PACKETS = "direct_packets"
+        /** Server errors (no signal, no tuner, scrambled) as TIF reasons, boolean, default off */
+        const val KEY_DETAILED_ERRORS = "detailed_errors"
+        /** Forward tvheadend signalStatus to the TV app as session event, boolean, default off */
+        const val KEY_SIGNAL_STATUS = "signal_status"
         const val KEY_TIMEOUT = "connect_timeout"
         const val KEY_ENABLE_EPG = "enable_epg"
     }
