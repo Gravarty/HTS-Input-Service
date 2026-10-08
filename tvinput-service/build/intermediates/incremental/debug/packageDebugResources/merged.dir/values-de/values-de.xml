@@ -20,6 +20,8 @@
     <string name="hts_setup_label">HTS Einrichtung</string>
     <string name="pref_category_advanced">Erweitert</string>
     <string name="pref_category_epg">Programmübersicht</string>
+    <string name="pref_category_extended">Live Channels Extended</string>
+    <string name="pref_category_playback">Wiedergabe</string>
     <string name="pref_channels_count">%1$d Sender</string>
     <string name="pref_channels_loading">Sender werden gezählt …</string>
     <string name="pref_channels_radio_title">Radio-Sender</string>

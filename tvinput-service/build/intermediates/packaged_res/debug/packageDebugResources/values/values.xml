@@ -40,6 +40,8 @@
     <string name="hts_setup_label">HTS Setup</string>
     <string name="pref_category_advanced">Advanced</string>
     <string name="pref_category_epg">Program guide</string>
+    <string name="pref_category_extended">Live Channels Extended</string>
+    <string name="pref_category_playback">Playback</string>
     <string name="pref_channels_count">%1$d channels</string>
     <string name="pref_channels_loading">Counting channels…</string>
     <string name="pref_channels_radio_title">Radio channels</string>

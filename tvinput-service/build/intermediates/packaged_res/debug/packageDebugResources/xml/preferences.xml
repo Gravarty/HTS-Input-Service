@@ -43,18 +43,7 @@
             android:summary="@string/pref_epg_max_time_summary"/>
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="@string/pref_category_advanced">
-        <CheckBoxPreference
-            android:key="detailed_errors"
-            android:title="@string/pref_detailed_errors_title"
-            android:summary="@string/pref_detailed_errors_summary"
-            android:defaultValue="false" />
-        <CheckBoxPreference
-            android:key="signal_status"
-            android:title="@string/pref_signal_status_title"
-            android:summary="@string/pref_signal_status_summary"
-            android:defaultValue="false" />
-        <!-- Entries are loaded from the server (HTSP getProfiles), see HtspSettingsActivity -->
+    <PreferenceCategory android:title="@string/pref_category_playback">
         <ListPreference
             android:key="profile"
             android:title="@string/pref_profile_title"
@@ -66,6 +55,22 @@
             android:title="@string/pref_force_stereo_title"
             android:summary="@string/pref_force_stereo_summary"
             android:defaultValue="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_category_extended">
+        <CheckBoxPreference
+            android:key="detailed_errors"
+            android:title="@string/pref_detailed_errors_title"
+            android:summary="@string/pref_detailed_errors_summary"
+            android:defaultValue="false" />
+        <CheckBoxPreference
+            android:key="signal_status"
+            android:title="@string/pref_signal_status_title"
+            android:summary="@string/pref_signal_status_summary"
+            android:defaultValue="false" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_category_advanced">
         <CheckBoxPreference
             android:key="tunneling"
             android:title="@string/pref_tunneling_title"

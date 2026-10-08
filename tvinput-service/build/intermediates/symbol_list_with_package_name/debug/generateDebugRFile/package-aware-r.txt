@@ -39,6 +39,8 @@ string account_username_invalid
 string hts_setup_label
 string pref_category_advanced
 string pref_category_epg
+string pref_category_extended
+string pref_category_playback
 string pref_channels_count
 string pref_channels_loading
 string pref_channels_radio_title

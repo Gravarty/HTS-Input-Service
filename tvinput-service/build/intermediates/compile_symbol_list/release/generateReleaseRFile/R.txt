@@ -38,6 +38,8 @@ int string account_username_invalid 0x0
 int string hts_setup_label 0x0
 int string pref_category_advanced 0x0
 int string pref_category_epg 0x0
+int string pref_category_extended 0x0
+int string pref_category_playback 0x0
 int string pref_channels_count 0x0
 int string pref_channels_loading 0x0
 int string pref_channels_radio_title 0x0

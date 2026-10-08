@@ -54,6 +54,8 @@
     <string name="setup_epg_status">Dies kann einige Minuten dauern.</string>
 
     <!-- Added for this project (not in htsptvinput) -->
+    <string name="pref_category_playback">Wiedergabe</string>
+    <string name="pref_category_extended">Live Channels Extended</string>
     <string name="pref_signal_status_title">Signalwerte</string>
     <string name="pref_signal_status_summary">Sendet Signalqualität, Pegel und Fehlerrate von Tvheadend an die TV-App. Benötigt Live Channels Extended.</string>
     <string name="pref_detailed_errors_title">Genauere Fehlermeldungen</string>

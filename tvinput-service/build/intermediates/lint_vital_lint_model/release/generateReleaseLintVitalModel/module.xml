@@ -1,6 +1,6 @@
 <lint-module
     format="1"
-    dir="/Users/dennis/Desktop/HTS-Input-Service-optimized/tvinput-service"
+    dir="/Users/dennis/Downloads/HTS-Input-Service/tvinput-service"
     name=":tvinput-service"
     type="LIBRARY"
     maven="HTS:tvinput-service:unspecified"
