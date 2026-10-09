@@ -1,6 +1,8 @@
 package com.gravarty.htsp.tvinput.mapper
 
 import android.media.tv.TvTrackInfo
+import android.os.Build
+import androidx.media3.common.MimeTypes
 import com.gravarty.htsp.core.model.HtspStream
 
 object TvTrackInfoMapper {
@@ -26,6 +28,13 @@ object TvTrackInfoMapper {
                         .setLanguage(lang)
                         .setAudioChannelCount(stream.channels)
                         .setAudioSampleRate(stream.sampleRateHz)
+                        .apply {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                audioMimeType(stream.type)?.let { setEncoding(it) }
+                                setHardOfHearing(stream.audioType == 2)
+                                setAudioDescription(stream.audioType == 3)
+                            }
+                        }
                         .build()
                 }
                 // TEXTSUB / TELETEXT have no decoder here, so they are not offered
@@ -43,5 +52,16 @@ object TvTrackInfoMapper {
         }
 
         return result
+    }
+
+    private fun audioMimeType(type: String): String? = when (type.uppercase()) {
+        "AC3" -> MimeTypes.AUDIO_AC3
+        "EAC3" -> MimeTypes.AUDIO_E_AC3
+        "AAC" -> MimeTypes.AUDIO_AAC
+        "MPEG2AUDIO" -> MimeTypes.AUDIO_MPEG
+        "VORBIS" -> MimeTypes.AUDIO_VORBIS
+        "FLAC" -> MimeTypes.AUDIO_FLAC
+        "OPUS" -> MimeTypes.AUDIO_OPUS
+        else -> null
     }
 }

@@ -1,6 +1,7 @@
 package com.gravarty.htsp.tvinput
 
 import com.gravarty.htsp.provider.HtspLog
+import com.gravarty.htsp.provider.HtspNetworkTypes
 import android.content.Context
 import android.media.tv.TvContract
 import android.media.tv.TvInputManager
@@ -116,6 +117,13 @@ class HtspTvInputSession(
         ioScope.cancel()
     }
 
+    /** Reception type of the playing channel's network (HtspNetworkTypes), from sourceinfo */
+    private fun learnNetworkType(msg: com.gravarty.htsp.core.HtsMessage) {
+        val si = msg.getMap("sourceinfo") ?: return
+        // Only remembered for channels inserted later: the TvProvider rejects updates of COLUMN_TYPE
+        HtspNetworkTypes.learn(context, si["network"] as? String, si["network_type"] as? String)
+    }
+
     private var subscriptionErrorShown = false
 
     /** Setting "signal values" (needs a TV app that shows them) */
@@ -157,8 +165,6 @@ class HtspTvInputSession(
         notifyVideoUnavailable(reason)
     }
 
-    private var zapStartMs = 0L // TEMPORARY zap time
-
     override fun onSetSurface(surface: Surface?): Boolean {
         HtspLog.i("onSetSurface ${surface?.let { "valid=${it.isValid} ${System.identityHashCode(it)}" }} " +
             "(player ${if (exoPlayer != null) "running" else "none"})")
@@ -181,7 +187,6 @@ class HtspTvInputSession(
     override fun onTune(channelUri: Uri?): Boolean {
         if (channelUri == null) return false
 
-        zapStartMs = android.os.SystemClock.elapsedRealtime() // TEMPORARY zap time
         notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_TUNING)
         releasePlayerAndSubscription()
 
@@ -234,6 +239,7 @@ class HtspTvInputSession(
                                 }
                                 HtspLog.i("<- ${msg.method} $fields")
                             }
+                            if (msg.method == "subscriptionStart") learnNetworkType(msg)
                             // Signal values for the TV app's signal display (SignalStatusProvider)
                             if (msg.method == "signalStatus" && signalStatusEnabled) SignalStatusStore.update(msg)
                             if (detailedErrors && msg.method == "subscriptionStatus") {
@@ -397,11 +403,6 @@ class HtspTvInputSession(
             override fun onRenderedFirstFrame() {
                 HtspLog.i("First frame rendered")
                 firstFrameShown = true
-                // TEMPORARY: zap time, error log = visible in release
-                if (zapStartMs > 0) {
-                    HtspLog.e("ZAP ${android.os.SystemClock.elapsedRealtime() - zapStartMs} ms")
-                    zapStartMs = 0
-                }
                 notifyVideoAvailable()
             }
 

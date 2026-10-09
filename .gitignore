@@ -16,3 +16,12 @@ local.properties
 keystore.properties
 *.jks
 hts-release.keystore
+# Generated build files and local IDE configuration
+**/build/
+.gradle/
+.idea/
+
+# Local signing credentials
+*.keystore
+*.jks
+keystore.properties

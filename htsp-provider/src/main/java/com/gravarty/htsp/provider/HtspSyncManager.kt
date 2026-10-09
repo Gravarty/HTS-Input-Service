@@ -10,7 +10,14 @@ import com.gravarty.htsp.core.HtspRepository
 import com.gravarty.htsp.core.HtspSettings
 import com.gravarty.htsp.core.model.Channel
 import com.gravarty.htsp.core.model.Event
+import com.gravarty.htsp.core.HtspSubscription
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.onSubscription
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -31,6 +38,42 @@ class HtspSyncManager(
     private fun listedChannels() = repository.channels.value.values
         .filter { it.type == Channel.TYPE_TV || it.type == Channel.TYPE_RADIO }
 
+    /**
+     * The TvProvider sets COLUMN_TYPE only when a channel row is inserted, so the reception type
+     * must be known before. HTSP sends it only in subscriptionStart (sourceinfo.network_type):
+     * for every network without a known type one of its channels is subscribed briefly with
+     * pvr.hts' pre-tuning weight (40, below live TV and recordings), the type is read and the
+     * subscription is stopped. Done once per network; no free tuner -> stays unknown (TYPE_OTHER).
+     */
+    private suspend fun probeUnknownNetworks(channels: List<Channel>) {
+        val probes = LinkedHashMap<String, Channel>()
+        for (channel in channels) for (network in channel.networks) {
+            if (network !in probes && !HtspNetworkTypes.isKnown(context, network)) probes[network] = channel
+        }
+        if (probes.isNotEmpty()) HtspLog.e("CHTYPE probe networks ${probes.keys}") // TEMPORARY diagnostic
+        for ((network, channel) in probes) {
+            val sub = HtspSubscription(connection)
+            val start = coroutineScope {
+                val ready = CompletableDeferred<Unit>()
+                val waiter = async {
+                    withTimeoutOrNull(PROBE_TIMEOUT_MS) {
+                        connection.asyncMessages
+                            .onSubscription { ready.complete(Unit) }
+                            .first { it.method == "subscriptionStart" && it.getLong("subscriptionId") == sub.subscriptionId }
+                    }
+                }
+                ready.await()
+                val ok = runCatching { sub.subscribe(channel.id, weight = PROBE_WEIGHT) }.getOrDefault(false)
+                if (ok) waiter.await() else { waiter.cancel(); null }
+            }
+            runCatching { sub.unsubscribe() }
+            sub.release()
+            val si = start?.getMap("sourceinfo")
+            if (si == null) HtspLog.e("Network '$network': no reception type (no subscriptionStart)")
+            else HtspNetworkTypes.learn(context, si["network"] as? String, si["network_type"] as? String)
+        }
+    }
+
     /** TV channels -> TV input, radio channels -> radio input. Returns htspId -> row id for both. */
     private fun syncBothInputs(channels: List<Channel>): Map<Long, Long> {
         newlyInsertedAll.clear()
@@ -46,6 +89,7 @@ class HtspSyncManager(
     ) = writeLock.withLock { withContext(Dispatchers.IO) {
         val channels = listedChannels()
 
+        probeUnknownNetworks(channels)
         onProgress("Updating ${channels.size} channels...")
         val htspToDbId = syncBothInputs(channels)
 
@@ -77,6 +121,7 @@ class HtspSyncManager(
     ) = writeLock.withLock { withContext(Dispatchers.IO) {
         val htspToDbId = if (changedChannelIds.isNotEmpty()) {
             val channels = listedChannels()
+            probeUnknownNetworks(channels) // new channels may be inserted here as well
             val map = syncBothInputs(channels)
             for (channel in channels) {
                 if (channel.id !in changedChannelIds) continue
@@ -209,9 +254,11 @@ class HtspSyncManager(
             resolver.delete(channelsUri, null, null)
         }
 
-        val newValues = channels.associate { it.id to HtspChannelMapper.toContentValues(it, inputId) }
+        val newValues = channels.associate { it.id to HtspChannelMapper.toContentValues(it, inputId, HtspNetworkTypes.tvType(context, it)) }
         val columns = newValues.values.flatMap { it.keySet() }.toSortedSet()
-            .filter { it != TvContract.Channels.COLUMN_INTERNAL_PROVIDER_DATA }
+            // COLUMN_TYPE can only be set on insert: this TvProvider rejects (0 rows) any update
+            // that changes it, together with all other columns of that update.
+            .filter { it != TvContract.Channels.COLUMN_INTERNAL_PROVIDER_DATA && it != TvContract.Channels.COLUMN_TYPE }
 
         val existing = HashMap<Long, Long>() // htspId -> dbId
         val unchanged = HashSet<Long>()      // htspIds whose row already matches
@@ -249,7 +296,8 @@ class HtspSyncManager(
             val dbId = existing[channel.id]
             if (dbId != null) {
                 if (channel.id in unchanged) continue
-                ops.add(ContentProviderOperation.newUpdate(TvContract.buildChannelUri(dbId)).withValues(values).build())
+                val update = ContentValues(values).apply { remove(TvContract.Channels.COLUMN_TYPE) }
+                ops.add(ContentProviderOperation.newUpdate(TvContract.buildChannelUri(dbId)).withValues(update).build())
             } else {
                 ops.add(ContentProviderOperation.newInsert(TvContract.Channels.CONTENT_URI).withValues(values).build())
                 insertOrder.add(channel.id)
@@ -259,6 +307,10 @@ class HtspSyncManager(
         var insertIdx = 0
         newlyInserted.clear()
         newlyInserted.addAll(insertOrder)
+        // TEMPORARY diagnostic (error level = visible in release): type of newly inserted rows
+        if (insertOrder.isNotEmpty()) HtspLog.e("CHTYPE insert $inputId: ${insertOrder.size} rows, types " +
+            insertOrder.groupingBy { newValues.getValue(it).getAsString(TvContract.Channels.COLUMN_TYPE) }.eachCount() +
+            ", known networks ${channels.flatMap { it.networks }.distinct().associateWith { HtspNetworkTypes.isKnown(context, it) }}")
         for (chunk in ops.chunked(100)) {
             val results = resolver.applyBatch(TvContract.AUTHORITY, ArrayList(chunk))
             for (r in results) {
@@ -354,6 +406,10 @@ class HtspSyncManager(
 
     companion object {
         private const val LOGO_CACHE = "htsp_logo_cache"
+        /** pvr.hts Subscription.h SUBSCRIPTION_WEIGHT_PRETUNING */
+        private const val PROBE_WEIGHT = 40
+        /** Own choice: tuning a transponder took up to ~1.4 s in the logs */
+        private const val PROBE_TIMEOUT_MS = 8_000L
 
         /** Setup, background worker and live service must not write at the same time. */
         val writeLock = Mutex()

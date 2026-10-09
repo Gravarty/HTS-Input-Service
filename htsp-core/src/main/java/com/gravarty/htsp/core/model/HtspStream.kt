@@ -18,7 +18,8 @@ data class HtspStream(
     val meta: ByteArray? = null,
     val duration: Int = 0,
     val compositionId: Int = 0,   // DVBSUB (pvr.hts SetSubtitleInfo)
-    val ancillaryId: Int = 0
+    val ancillaryId: Int = 0,
+    val audioType: Int = 0        // ISO 639 audio_type: 2 = hearing impaired, 3 = visual impaired (AD)
 ) {
     /**
      * Pixel aspect ratio from tvheadend's display aspect (aspect_num/aspect_den, parsed by
@@ -89,6 +90,7 @@ data class HtspStream(
             val duration = (map["duration"] as? Number)?.toInt() ?: 0
             val compositionId = (map["composition_id"] as? Number)?.toInt() ?: 0
             val ancillaryId = (map["ancillary_id"] as? Number)?.toInt() ?: 0
+            val audioType = (map["audio_type"] as? Number)?.toInt() ?: 0
 
             return HtspStream(
                 index = index,
@@ -105,7 +107,8 @@ data class HtspStream(
                 meta = meta,
                 duration = duration,
                 compositionId = compositionId,
-                ancillaryId = ancillaryId
+                ancillaryId = ancillaryId,
+                audioType = audioType
             )
         }
     }

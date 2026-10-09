@@ -2,10 +2,12 @@ package com.gravarty.htsp.provider
 
 import android.content.ContentValues
 import android.media.tv.TvContract
+import android.os.Build
 import com.gravarty.htsp.core.model.Channel
 
 object HtspChannelMapper {
-    fun toContentValues(channel: Channel, inputId: String): ContentValues {
+    /** [type]: TvContract.Channels.TYPE_DVB_* from HtspNetworkTypes, TYPE_OTHER when unknown */
+    fun toContentValues(channel: Channel, inputId: String, type: String = TvContract.Channels.TYPE_OTHER): ContentValues {
         val number = if (channel.numberMinor > 0) "${channel.number}.${channel.numberMinor}"
                      else channel.number.toString()
         val serviceType = if (channel.type == Channel.TYPE_RADIO) TvContract.Channels.SERVICE_TYPE_AUDIO
@@ -17,7 +19,10 @@ object HtspChannelMapper {
             put(TvContract.Channels.COLUMN_ORIGINAL_NETWORK_ID, channel.id.toInt())
             put(TvContract.Channels.COLUMN_SERVICE_TYPE, serviceType)
             put(TvContract.Channels.COLUMN_INTERNAL_PROVIDER_DATA, channel.id.toString())
-            put(TvContract.Channels.COLUMN_TYPE, TvContract.Channels.TYPE_OTHER)
+            put(TvContract.Channels.COLUMN_TYPE, type)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                put(TvContract.Channels.COLUMN_SCRAMBLED, if (channel.caid != 0) 1 else 0)
+            }
         }
     }
 }

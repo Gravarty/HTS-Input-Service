@@ -90,6 +90,11 @@ class HtspRepository {
             }
             "dvrEntryAdd", "dvrEntryUpdate" -> {
                 val id = msg.getLong("id") ?: return
+                // pvr.hts ParseRecordingAddOrUpdate: ignore recordings without a file (e.g. removed recordings)
+                if (msg.getString("error")?.contains("missing") == true) {
+                    _dvrEntries.value = _dvrEntries.value - id
+                    return
+                }
                 val dvr = _dvrEntries.value[id]?.update(msg) ?: DvrEntry.fromHtsMessage(msg)
                 _dvrEntries.value = _dvrEntries.value + (id to dvr)
             }

@@ -5,9 +5,9 @@
       resolved="::"/>
   <library
       name=":@@:htsp-provider::release"
-      jars="/Users/dennis/.gradle/caches/9.6.0/transforms/e9d3a2d9943c2908df805c64f5773620/transformed/out/jars/classes.jar:/Users/dennis/.gradle/caches/9.6.0/transforms/e9d3a2d9943c2908df805c64f5773620/transformed/out/jars/libs/R.jar"
+      jars="/Users/dennis/.gradle/caches/9.6.0/transforms/de63b1da4464476227126e56f2029fb0/transformed/out/jars/classes.jar:/Users/dennis/.gradle/caches/9.6.0/transforms/de63b1da4464476227126e56f2029fb0/transformed/out/jars/libs/R.jar"
       resolved="HTS:htsp-provider:unspecified"
-      folder="/Users/dennis/.gradle/caches/9.6.0/transforms/e9d3a2d9943c2908df805c64f5773620/transformed/out"
+      folder="/Users/dennis/.gradle/caches/9.6.0/transforms/de63b1da4464476227126e56f2029fb0/transformed/out"
       manifest="AndroidManifest.xml"
       resFolder="res"
       assetsFolder="assets"
