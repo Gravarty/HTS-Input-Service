@@ -41,6 +41,15 @@ class HtspVfs(private val connection: HtspConnection, recordingId: Long) {
     suspend fun close() {
         val id = fileId ?: return
         fileId = null
-        runCatching { connection.sendRequest("fileClose", mapOf("id" to id)) }
+        // pvr.hts SendFileClose (dvr_playstatus on): HTSP_DVR_PLAYCOUNT_KEEP, otherwise tvheadend
+        // increments playcount on every close; the play count is set via updateDvrEntry instead
+        val m = if (connection.serverProtocol >= 27) mapOf("id" to id, "playcount" to PLAYCOUNT_KEEP)
+                else mapOf("id" to id)
+        runCatching { connection.sendRequest("fileClose", m) }
+    }
+
+    companion object {
+        /** tvheadend htsp_server.h HTSP_DVR_PLAYCOUNT_KEEP (INT32_MAX - 1) */
+        private const val PLAYCOUNT_KEEP = 2147483646L
     }
 }

@@ -13,7 +13,10 @@ import com.gravarty.htsp.core.HtsMessage
  * Works on every Android version: the TV app queries content://com.gravarty.hts.signal/status
  * (e.g. once a second while its signal panel is open); nothing is sent when nobody asks.
  * Columns = HTSP field names (htsp_server.c htsp_subscription_signal_status), NULL when
- * tvheadend did not send the field, plus age_ms. No row = no playback / setting off.
+ * tvheadend did not send the field, plus age_ms (NULL until the first signalStatus).
+ * adapter / mux / service / provider: subscriptionStart sourceinfo like pvr.hts
+ * HTSPDemuxer::ParseSourceInfo / CurrentSignal (mux = "satpos: mux").
+ * No row = no playback / setting off.
  */
 class SignalStatusProvider : ContentProvider() {
 
@@ -21,14 +24,17 @@ class SignalStatusProvider : ContentProvider() {
 
     override fun query(uri: Uri, p: Array<out String>?, s: String?, a: Array<out String>?, o: String?): Cursor {
         val cursor = MatrixCursor(COLUMNS)
-        val latest = SignalStatusStore.latest ?: return cursor
-        val m = latest.message
+        val latest = SignalStatusStore.latest
+        val src = SignalStatusStore.source
+        if (latest == null && src == null) return cursor
+        val m = latest?.message
         cursor.addRow(arrayOf<Any?>(
-            m.getString("feStatus"),
-            m.getLong("feSNR"), m.getLong("feAbsoluteSNR"),
-            m.getLong("feSignal"), m.getLong("feAbsoluteSignal"),
-            m.getLong("feBER"), m.getLong("feUNC"),
-            SystemClock.elapsedRealtime() - latest.receivedAt
+            m?.getString("feStatus"),
+            m?.getLong("feSNR"), m?.getLong("feAbsoluteSNR"),
+            m?.getLong("feSignal"), m?.getLong("feAbsoluteSignal"),
+            m?.getLong("feBER"), m?.getLong("feUNC"),
+            latest?.let { SystemClock.elapsedRealtime() - it.receivedAt },
+            src?.adapter, src?.mux, src?.service, src?.provider
         ))
         return cursor
     }
@@ -40,7 +46,8 @@ class SignalStatusProvider : ContentProvider() {
 
     companion object {
         val COLUMNS = arrayOf(
-            "feStatus", "feSNR", "feAbsoluteSNR", "feSignal", "feAbsoluteSignal", "feBER", "feUNC", "age_ms"
+            "feStatus", "feSNR", "feAbsoluteSNR", "feSignal", "feAbsoluteSignal", "feBER", "feUNC", "age_ms",
+            "adapter", "mux", "service", "provider"
         )
     }
 }
@@ -48,10 +55,28 @@ class SignalStatusProvider : ContentProvider() {
 /** Holds only the last signalStatus message; set by the playing session. */
 object SignalStatusStore {
     class Entry(val message: HtsMessage, val receivedAt: Long)
+    class Source(val adapter: String?, val mux: String?, val service: String?, val provider: String?)
 
     @Volatile
     var latest: Entry? = null
         private set
+
+    @Volatile
+    var source: Source? = null
+        private set
+
+    /** pvr.hts HTSPDemuxer::ParseSourceInfo: mux name prefixed with the satellite position. */
+    fun setSource(subscriptionStart: HtsMessage) {
+        val si = subscriptionStart.getMap("sourceinfo") ?: return
+        val satpos = si["satpos"] as? String
+        val mux = si["mux"] as? String
+        source = Source(
+            adapter = si["adapter"] as? String,
+            mux = if (satpos == null && mux == null) null else (satpos?.let { "$it: " } ?: "") + (mux ?: ""),
+            service = si["service"] as? String,
+            provider = si["provider"] as? String
+        )
+    }
 
     fun update(message: HtsMessage) {
         latest = Entry(message, SystemClock.elapsedRealtime())
@@ -59,5 +84,6 @@ object SignalStatusStore {
 
     fun clear() {
         latest = null
+        source = null
     }
 }

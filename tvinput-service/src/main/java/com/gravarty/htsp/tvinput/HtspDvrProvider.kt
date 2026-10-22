@@ -167,6 +167,8 @@ class HtspDvrProvider : ContentProvider() {
                     var ok = true
                     v.getAsString(Dvr.TITLE)?.let { ok = ok && dvr.renameRecording(rid, it) }          // pvr.hts RenameRecording
                     v.getAsLong(Dvr.REMOVAL)?.let { ok = ok && dvr.setRecordingLifetime(rid, it) }    // SetRecordingLifetime
+                    v.getAsLong(Dvr.PLAYCOUNT)?.let { ok = ok && dvr.setRecordingPlayCount(rid, it) }  // SetRecordingPlayCount
+                    v.getAsLong(Dvr.PLAYPOSITION)?.let { ok = ok && dvr.setRecordingPlayPosition(rid, it) } // SetRecordingLastPlayedPosition
                     ok
                 }
                 T_AUTORECS -> sendAutorec(dvr, id, v, repo)

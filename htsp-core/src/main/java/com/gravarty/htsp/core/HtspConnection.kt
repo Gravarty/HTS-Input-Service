@@ -53,6 +53,11 @@ class HtspConnection(
     @Volatile
     var webRoot: String = ""
         private set
+
+    /** Server's HTSP version from the hello reply (pvr.hts HTSPConnection::GetProtocol). */
+    @Volatile
+    var serverProtocol: Int = 0
+        private set
     private var listener: HtspConnectionListener? = null
     private var pingJob: Job? = null
 
@@ -95,6 +100,7 @@ class HtspConnection(
             )
 
             webRoot = helloMsg.getString("webroot") ?: ""
+            serverProtocol = helloMsg.getInt("htspversion") ?: 0
             val challenge = helloMsg.getByteArray("challenge")
 
             if (username.isNotEmpty() && challenge != null) {

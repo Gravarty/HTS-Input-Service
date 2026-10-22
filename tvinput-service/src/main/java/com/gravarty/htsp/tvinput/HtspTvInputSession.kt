@@ -239,7 +239,10 @@ class HtspTvInputSession(
                                 }
                                 HtspLog.i("<- ${msg.method} $fields")
                             }
-                            if (msg.method == "subscriptionStart") learnNetworkType(msg)
+                            if (msg.method == "subscriptionStart") {
+                                learnNetworkType(msg)
+                                if (signalStatusEnabled) SignalStatusStore.setSource(msg)
+                            }
                             // Signal values for the TV app's signal display (SignalStatusProvider)
                             if (msg.method == "signalStatus" && signalStatusEnabled) SignalStatusStore.update(msg)
                             if (detailedErrors && msg.method == "subscriptionStatus") {

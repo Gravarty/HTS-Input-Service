@@ -102,6 +102,15 @@ class HtspDvr(private val connection: HtspConnection) {
     suspend fun renameRecording(id: Long, title: String): Boolean =
         sendDvrUpdate(mapOf("id" to id, "title" to title))
 
+    /** pvr.hts SetRecordingPlayCount (HTSP >= 27) */
+    suspend fun setRecordingPlayCount(id: Long, playCount: Long): Boolean =
+        connection.serverProtocol >= 27 && sendDvrUpdate(mapOf("id" to id, "playcount" to playCount))
+
+    /** pvr.hts SetRecordingLastPlayedPosition (HTSP >= 27); seconds, negative is sent as 0 */
+    suspend fun setRecordingPlayPosition(id: Long, playPosition: Long): Boolean =
+        connection.serverProtocol >= 27 &&
+            sendDvrUpdate(mapOf("id" to id, "playposition" to playPosition.coerceAtLeast(0)))
+
     /** pvr.hts SetRecordingLifetime */
     suspend fun setRecordingLifetime(id: Long, removal: Long): Boolean =
         sendDvrUpdate(mapOf("id" to id, "removal" to removal))
