@@ -41,6 +41,7 @@ class HtspDvrProvider : ContentProvider() {
         T_TIMERS -> "vnd.android.cursor.dir/vnd.com.gravarty.hts.timer"
         T_AUTORECS -> "vnd.android.cursor.dir/vnd.com.gravarty.hts.autorec"
         T_TIMERECS -> "vnd.android.cursor.dir/vnd.com.gravarty.hts.timerec"
+        T_DISKSPACE -> "vnd.android.cursor.item/vnd.com.gravarty.hts.diskspace"
         else -> null
     }
 
@@ -52,7 +53,13 @@ class HtspDvrProvider : ContentProvider() {
     ): Cursor? {
         val table = table(uri) ?: return null
         val itemId = uri.pathSegments.getOrNull(1)
-        return dvr { repo, _ ->
+        return dvr { repo, dvr ->
+            if (table == T_DISKSPACE) {
+                // pvr.hts GetDriveSpace; no row if the server does not answer
+                val c = MatrixCursor(DISKSPACE_COLUMNS)
+                dvr.getDiskSpace()?.let { (free, total) -> c.addRow(arrayOf<Any?>(free, total)) }
+                return@dvr c
+            }
             val tvIds = tvChannelMap()
             when (table) {
                 T_RECORDINGS, T_TIMERS -> {
@@ -83,7 +90,8 @@ class HtspDvrProvider : ContentProvider() {
                 }
                 else -> null
             }
-        }?.also { it.setNotificationUri(context!!.contentResolver, HtspDvrContract.BASE_URI) }
+        }.let { it ?: if (table == T_DISKSPACE) MatrixCursor(DISKSPACE_COLUMNS) else null } // server unreachable: no row
+            ?.also { it.setNotificationUri(context!!.contentResolver, HtspDvrContract.BASE_URI) }
     }
 
     private fun dvrRow(e: DvrEntry, tvIds: Map<Long, Long>, recording: Boolean): Array<Any?> {
@@ -271,7 +279,7 @@ class HtspDvrProvider : ContentProvider() {
     }
 
     private fun table(uri: Uri): String? = uri.pathSegments.firstOrNull()
-        ?.takeIf { it in setOf(T_RECORDINGS, T_TIMERS, T_AUTORECS, T_TIMERECS) }
+        ?.takeIf { it in setOf(T_RECORDINGS, T_TIMERS, T_AUTORECS, T_TIMERECS, T_DISKSPACE) }
 
     private fun Boolean.i() = if (this) 1 else 0
     private fun ContentValues.long(key: String, def: Long) = getAsLong(key) ?: def
@@ -288,6 +296,9 @@ class HtspDvrProvider : ContentProvider() {
         const val T_TIMERS = "timers"
         const val T_AUTORECS = "autorecs"
         const val T_TIMERECS = "timerecs"
+        const val T_DISKSPACE = "diskspace"
+
+        val DISKSPACE_COLUMNS = arrayOf(HtspDvrContract.DiskSpace.FREE, HtspDvrContract.DiskSpace.TOTAL)
 
         val TIMER_COLUMNS = arrayOf(
             Dvr.ID, Dvr.CHANNEL, Dvr.TV_CHANNEL_ID, Dvr.CHANNEL_NAME, Dvr.TITLE, Dvr.SUBTITLE, Dvr.DESCRIPTION,

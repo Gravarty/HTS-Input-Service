@@ -102,6 +102,14 @@ class HtspDvr(private val connection: HtspConnection) {
     suspend fun renameRecording(id: Long, title: String): Boolean =
         sendDvrUpdate(mapOf("id" to id, "title" to title))
 
+    /** pvr.hts GetDriveSpace: getDiskSpace -> (free, total) in bytes; null if the reply lacks them */
+    suspend fun getDiskSpace(): Pair<Long, Long>? {
+        val m = connection.sendRequest("getDiskSpace", emptyMap())
+        val total = m.getLong("totaldiskspace") ?: return null
+        val free = m.getLong("freediskspace") ?: return null
+        return free to total
+    }
+
     /** pvr.hts SetRecordingPlayCount (HTSP >= 27) */
     suspend fun setRecordingPlayCount(id: Long, playCount: Long): Boolean =
         connection.serverProtocol >= 27 && sendDvrUpdate(mapOf("id" to id, "playcount" to playCount))

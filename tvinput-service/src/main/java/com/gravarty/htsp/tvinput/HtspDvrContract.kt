@@ -16,6 +16,13 @@ object HtspDvrContract {
     val TIMERS_URI: Uri = BASE_URI.buildUpon().appendPath("timers").build()
     val AUTORECS_URI: Uri = BASE_URI.buildUpon().appendPath("autorecs").build()
     val TIMERECS_URI: Uri = BASE_URI.buildUpon().appendPath("timerecs").build()
+    val DISKSPACE_URI: Uri = BASE_URI.buildUpon().appendPath("diskspace").build()
+
+    /** Disk space of the tvheadend server (pvr.hts GetDriveSpace / HTSP getDiskSpace), one row */
+    object DiskSpace {
+        const val FREE = "free"     // bytes (freediskspace)
+        const val TOTAL = "total"   // bytes (totaldiskspace)
+    }
 
     /** Common to recordings and timers (tvheadend dvr entry) */
     object Dvr {

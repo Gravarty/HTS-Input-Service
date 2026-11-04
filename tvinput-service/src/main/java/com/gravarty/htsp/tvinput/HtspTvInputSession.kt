@@ -32,6 +32,7 @@ import androidx.media3.exoplayer.audio.AudioRendererEventListener
 import androidx.media3.exoplayer.audio.MediaCodecAudioRenderer
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.video.MediaCodecVideoRenderer
+import androidx.media3.exoplayer.video.VideoFrameMetadataListener
 import androidx.media3.exoplayer.video.VideoRendererEventListener
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
@@ -85,6 +86,108 @@ class HtspTvInputSession(
     private var surface: Surface? = null
     private var mediaSource: HtspMediaSource? = null
     private var seekJob: Job? = null
+
+    /** First frame of the current player was rendered / the TV app was told "buffering" (TIF) */
+    private var firstFrameShown = false
+    private var buffering = false
+
+    /**
+     * Timeshift: after a seek media3 reports READY before the new picture is rendered (video
+     * "joining": ready for up to 5 s without a frame). While a seek is pending, READY must not
+     * end the loading state; the first rendered frame after the seek does.
+     */
+    private var seekPending = false
+    private var stepJob: Job? = null
+
+    private fun markSeekPending() {
+        if (recordingPlayback || !firstFrameShown) return
+        seekPending = true
+    }
+
+    private fun endSeekPending() {
+        seekPending = false
+        stepJob?.cancel()
+        stepJob = null
+    }
+
+    /**
+     * The server round trip of a seek (subscriptionSeek -> subscriptionSkip) runs before the
+     * player is told to seek, so the player's own BUFFERING state comes late: tell the TV app
+     * "buffering" right away (it shows its loading circle for that reason).
+     */
+    private fun showTimeshiftBuffering() {
+        if (recordingPlayback || !firstFrameShown || buffering || subscriptionErrorShown) return
+        buffering = true
+        notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_BUFFERING)
+    }
+
+    /**
+     * Rewind / fast forward: every step seeks, and its picture normally follows quickly. The
+     * loading state is only shown when the picture of a step is late (TRICK_BUFFERING_DELAY_MS),
+     * and held until it is rendered.
+     */
+    private fun armStepBuffering() {
+        stepJob?.cancel()
+        stepJob = sessionScope.launch {
+            delay(TRICK_BUFFERING_DELAY_MS)
+            markSeekPending()
+            showTimeshiftBuffering()
+        }
+    }
+
+    /**
+     * Resume (TIF onTimeShiftResume, e.g. Play after rewind): no seek and no flush, so no
+     * "first frame" event follows. The frame listener reports the next frame that is about to
+     * be rendered; if it does not arrive within RESUME_SHOW_DELAY_MS the TV app is told
+     * "buffering" until it does. Not in tunnel mode (the app renders the frames, no callback).
+     */
+    @Volatile private var frameAwaited = false
+    private var resumeJob: Job? = null
+    private val frameListener = VideoFrameMetadataListener { _, _, _, _ ->
+        // playback thread: only hand over once per resume
+        if (frameAwaited) {
+            frameAwaited = false
+            sessionScope.launch { onFrameAfterResume() }
+        }
+    }
+
+    private fun beginResumeWait(player: ExoPlayer) {
+        cancelResumeWait()
+        stepJob?.cancel()
+        if (recordingPlayback || !firstFrameShown || subscriptionErrorShown) return
+        if ((player.trackSelector as? DefaultTrackSelector)?.parameters?.tunnelingEnabled == true) {
+            // no frame callback in tunnel mode: do not leave a rewind loading state behind
+            if (buffering) {
+                buffering = false
+                endSeekPending()
+                notifyVideoAvailable()
+            }
+            return
+        }
+        frameAwaited = true
+        player.setVideoFrameMetadataListener(frameListener)
+        resumeJob = sessionScope.launch {
+            delay(RESUME_SHOW_DELAY_MS)
+            markSeekPending()
+            showTimeshiftBuffering()
+        }
+    }
+
+    private fun cancelResumeWait() {
+        frameAwaited = false
+        resumeJob?.cancel()
+        resumeJob = null
+        exoPlayer?.clearVideoFrameMetadataListener(frameListener)
+    }
+
+    private fun onFrameAfterResume() {
+        cancelResumeWait()
+        if (buffering) {
+            buffering = false
+            endSeekPending()
+            if (!subscriptionErrorShown) notifyVideoAvailable()
+        }
+    }
     private var trickJob: Job? = null
 
     /** Playing a recording (onTimeShiftPlay) instead of live TV */
@@ -385,8 +488,10 @@ class HtspTvInputSession(
                     .setMaxAudioChannelCount(if (forceStereo) 2 else Int.MAX_VALUE)
             )
         }
-        var firstFrameShown = false
-        var buffering = false
+        firstFrameShown = false
+        buffering = false
+        endSeekPending()
+        cancelResumeWait()
         player.addListener(object : Player.Listener {
             override fun onTracksChanged(tracks: androidx.media3.common.Tracks) {
                 tracks.groups.forEach { g ->
@@ -406,6 +511,8 @@ class HtspTvInputSession(
             override fun onRenderedFirstFrame() {
                 HtspLog.i("First frame rendered")
                 firstFrameShown = true
+                buffering = false
+                endSeekPending()
                 notifyVideoAvailable()
             }
 
@@ -417,17 +524,17 @@ class HtspTvInputSession(
                     // (TIF: VIDEO_UNAVAILABLE_REASON_BUFFERING). Before the first frame the
                     // TUNING state from onTune is still shown.
                     // (a server error such as "no signal" stays shown instead of the loading state)
-                    Player.STATE_BUFFERING -> if (firstFrameShown && !buffering && !subscriptionErrorShown) {
+                    Player.STATE_BUFFERING -> if (firstFrameShown && !buffering && !subscriptionErrorShown && trickJob?.isActive != true) {
                         buffering = true
                         notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_BUFFERING)
                     }
                     Player.STATE_READY -> {
                         if (!player.currentTracks.containsType(C.TRACK_TYPE_VIDEO)) {
                             notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_AUDIO_ONLY)
-                        } else if (buffering && !subscriptionErrorShown) {
+                        } else if (buffering && !seekPending && !subscriptionErrorShown) {
                             notifyVideoAvailable()
                         }
-                        buffering = false
+                        if (!seekPending) buffering = false
                     }
                 }
             }
@@ -521,6 +628,7 @@ class HtspTvInputSession(
         if (recordingPlayback) { exoPlayer?.playWhenReady = true; return }
         val sub = subscription ?: return
         ioScope.launch { runCatching { sub.setSpeed(HtspSubscription.SPEED_NORMAL) } }
+        exoPlayer?.let { beginResumeWait(it) }
         exoPlayer?.playWhenReady = true
     }
 
@@ -550,6 +658,7 @@ class HtspTvInputSession(
         val sub = subscription ?: return
         if (speed == 1f) {
             ioScope.launch { runCatching { sub.setSpeed(HtspSubscription.SPEED_NORMAL) } }
+            exoPlayer?.let { beginResumeWait(it) }
             exoPlayer?.playWhenReady = true
             return
         }
@@ -577,16 +686,16 @@ class HtspTvInputSession(
 
             when {
                 target <= bufferStart -> {       // reached the oldest buffered position
-                    seekTo(bufferStart)
+                    seekTo(bufferStart, trickStep = true)
                     player.playWhenReady = true
                     return
                 }
                 target >= bufferEnd -> {         // caught up with live
-                    seekTo(bufferEnd)
+                    seekTo(bufferEnd, trickStep = true)
                     player.playWhenReady = true
                     return
                 }
-                else -> seekTo(target)
+                else -> seekTo(target, trickStep = true)
             }
         }
     }
@@ -676,7 +785,7 @@ class HtspTvInputSession(
     }
 
     /** Wall-clock position -> subscriptionSeek -> wait for subscriptionSkip -> player seek. */
-    private suspend fun seekTo(timeMs: Long) {
+    private suspend fun seekTo(timeMs: Long, trickStep: Boolean = false) {
         val sub = subscription ?: return
         val status = sub.timeshiftStatus.value ?: return
         val period = mediaSource?.currentPeriod ?: return
@@ -684,6 +793,12 @@ class HtspTvInputSession(
 
         val targetUs = ((timeMs - startTimeMs) * 1000).coerceIn(status.start, status.end)
         period.beginSeek()
+        if (trickStep) {
+            armStepBuffering()
+        } else {
+            markSeekPending()
+            showTimeshiftBuffering()
+        }
         val skippedUs = try {
             withContext(Dispatchers.IO) { sub.seek(targetUs) }
         } catch (e: kotlinx.coroutines.CancellationException) {
@@ -694,6 +809,12 @@ class HtspTvInputSession(
         if (skippedUs == null) {
             HtspLog.e("Seek to $targetUs µs: no valid subscriptionSkip")
             period.cancelSeek()
+            // no player seek follows: the picture keeps playing, so end the loading state here
+            endSeekPending()
+            if (buffering && exoPlayer?.playbackState == Player.STATE_READY) {
+                buffering = false
+                if (!subscriptionErrorShown) notifyVideoAvailable()
+            }
             return
         }
         HtspLog.i("Seek to $targetUs µs -> server skipped to $skippedUs µs")
@@ -862,6 +983,10 @@ class HtspTvInputSession(
     private companion object {
         /** Interval between trick-play seeks (own choice, pvr.hts leaves this to Kodi's player). */
         const val TRICK_STEP_MS = 500L
+        /** Rewind/fast forward: loading state only if the picture of a step is this late */
+        const val TRICK_BUFFERING_DELAY_MS = 600L
+        /** Resume: loading state only if no frame is rendered within this time */
+        const val RESUME_SHOW_DELAY_MS = 300L
     }
 }
 
