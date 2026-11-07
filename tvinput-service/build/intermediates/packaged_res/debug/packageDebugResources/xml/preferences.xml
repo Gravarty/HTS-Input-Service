@@ -22,16 +22,11 @@
         android:title="@string/pref_server_title"
         android:summary="@string/pref_server_summary" />
 
-    <CheckBoxPreference
-        android:key="home_preview"
-        android:title="@string/pref_home_preview_title"
-        android:summary="@string/pref_home_preview_summary"
-        android:defaultValue="false" />
-
     <PreferenceCategory android:title="@string/pref_category_epg">
         <CheckBoxPreference
             android:key="enable_epg"
             android:title="@string/pref_epg_sync_title"
+            android:summary="@string/pref_epg_sync_summary"
             android:defaultValue="@bool/pref_default_epg_sync_enabled" />
         <ListPreference
             android:key="epg_max_time"
@@ -50,27 +45,22 @@
             android:dialogTitle="@string/pref_profile_title"
             android:summary="@string/pref_profile_summary"
             android:defaultValue="@string/pref_default_htsp_stream_profile" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_category_audio">
         <CheckBoxPreference
             android:key="force_stereo"
             android:title="@string/pref_force_stereo_title"
             android:summary="@string/pref_force_stereo_summary"
             android:defaultValue="true" />
+        <CheckBoxPreference
+            android:key="audio_ffmpeg"
+            android:title="@string/pref_audio_ffmpeg_title"
+            android:summary="@string/pref_audio_ffmpeg_summary"
+            android:defaultValue="true" />
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="@string/pref_category_extended">
-        <CheckBoxPreference
-            android:key="detailed_errors"
-            android:title="@string/pref_detailed_errors_title"
-            android:summary="@string/pref_detailed_errors_summary"
-            android:defaultValue="false" />
-        <CheckBoxPreference
-            android:key="signal_status"
-            android:title="@string/pref_signal_status_title"
-            android:summary="@string/pref_signal_status_summary"
-            android:defaultValue="false" />
-    </PreferenceCategory>
-
-    <PreferenceCategory android:title="@string/pref_category_advanced">
+    <PreferenceCategory android:title="@string/pref_category_video">
         <CheckBoxPreference
             android:key="tunneling"
             android:title="@string/pref_tunneling_title"
@@ -81,6 +71,21 @@
             android:title="@string/pref_direct_packets_title"
             android:summary="@string/pref_direct_packets_summary"
             android:defaultValue="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="@string/pref_category_extended"
+        android:summary="@string/pref_category_extended_summary">
+        <CheckBoxPreference
+            android:key="detailed_errors"
+            android:title="@string/pref_detailed_errors_title"
+            android:summary="@string/pref_detailed_errors_summary"
+            android:defaultValue="false" />
+        <CheckBoxPreference
+            android:key="signal_status"
+            android:title="@string/pref_signal_status_title"
+            android:summary="@string/pref_signal_status_summary"
+            android:defaultValue="false" />
     </PreferenceCategory>
 
 </PreferenceScreen>

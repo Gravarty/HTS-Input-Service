@@ -36,10 +36,14 @@ int string account_password_invalid 0x0
 int string account_username 0x0
 int string account_username_invalid 0x0
 int string hts_setup_label 0x0
-int string pref_category_advanced 0x0
+int string pref_audio_ffmpeg_summary 0x0
+int string pref_audio_ffmpeg_title 0x0
+int string pref_category_audio 0x0
 int string pref_category_epg 0x0
 int string pref_category_extended 0x0
+int string pref_category_extended_summary 0x0
 int string pref_category_playback 0x0
+int string pref_category_video 0x0
 int string pref_channels_count 0x0
 int string pref_channels_loading 0x0
 int string pref_channels_radio_title 0x0
@@ -52,11 +56,10 @@ int string pref_direct_packets_summary 0x0
 int string pref_direct_packets_title 0x0
 int string pref_epg_max_time_summary 0x0
 int string pref_epg_max_time_title 0x0
+int string pref_epg_sync_summary 0x0
 int string pref_epg_sync_title 0x0
 int string pref_force_stereo_summary 0x0
 int string pref_force_stereo_title 0x0
-int string pref_home_preview_summary 0x0
-int string pref_home_preview_title 0x0
 int string pref_profile_current 0x0
 int string pref_profile_loading 0x0
 int string pref_profile_summary 0x0
@@ -69,8 +72,6 @@ int string pref_signal_status_summary 0x0
 int string pref_signal_status_title 0x0
 int string pref_tunneling_summary 0x0
 int string pref_tunneling_title 0x0
-int string preview_recent_channels 0x0
-int string preview_recent_channels_description 0x0
 int string server_htsp_port 0x0
 int string server_htsp_port_invalid 0x0
 int string server_http_port 0x0

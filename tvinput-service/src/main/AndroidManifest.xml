@@ -60,12 +60,6 @@
             android:authorities="com.gravarty.hts.dvr"
             android:exported="true" />
     
-        <!-- Home-screen tile images for the "Recently watched" preview channel (read by launchers) -->
-        <provider
-            android:name=".ChannelTileProvider"
-            android:authorities="com.gravarty.hts.tiles"
-            android:exported="true" />
-    
         <!-- Signal values of the playing channel for the TV app (queried, nothing is pushed) -->
         <provider
             android:name=".SignalStatusProvider"

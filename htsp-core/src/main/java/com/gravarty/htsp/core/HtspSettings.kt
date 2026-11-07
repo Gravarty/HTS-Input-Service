@@ -29,10 +29,10 @@ data class HtspSettings(
         const val KEY_PROFILE = "profile"
         /** Multimedia tunneling (Android TV tunnel mode), boolean, default off (timeshift problems) */
         const val KEY_TUNNELING = "tunneling"
+        /** All audio decoded by ffmpeg instead of the device's hardware decoders, boolean, default on */
+        const val KEY_AUDIO_FFMPEG = "audio_ffmpeg"
         /** Downmix multichannel audio to stereo, boolean, default on */
         const val KEY_FORCE_STEREO = "force_stereo"
-        /** "Recently watched" preview channel on the launcher home screen, boolean, default off */
-        const val KEY_HOME_PREVIEW = "home_preview"
         /** Direct packet delivery from the read thread to the player, boolean, default on */
         const val KEY_DIRECT_PACKETS = "direct_packets"
         /** Server errors (no signal, no tuner, scrambled) as TIF reasons, boolean, default off */

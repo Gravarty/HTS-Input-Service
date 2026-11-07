@@ -34,13 +34,13 @@
     <string name="setup_settings_title">Settings</string>
     <string name="pref_screen_title">HTS Settings</string>
     <string name="hts_setup_label">HTS Setup</string>
-    <string name="pref_category_epg">Program guide</string>
-    <string name="pref_epg_sync_title">Sync program guide</string>
-    <string name="pref_epg_max_time_title">Program guide range</string>
-    <string name="pref_epg_max_time_summary">How far in advance program information is loaded</string>
-    <string name="pref_category_advanced">Advanced</string>
-    <string name="pref_profile_title">Stream profile</string>
-    <string name="pref_profile_summary">Tvheadend stream profile used for playback</string>
+    <string name="pref_category_epg">Electronic Programme Guide (EPG)</string>
+    <string name="pref_epg_sync_title">Synchronise Programme Guide</string>
+    <string name="pref_epg_sync_summary">Loads programme information from the server.</string>
+    <string name="pref_epg_max_time_title">Programme Guide Period</string>
+    <string name="pref_epg_max_time_summary">Sets how far ahead programme information is loaded.</string>
+    <string name="pref_profile_title">Streaming Profile</string>
+    <string name="pref_profile_summary">Selects the streaming profile used by the Tvheadend server.</string>
     <string name="pref_profile_current">Current profile: %1$s</string>
     <string name="pref_profile_loading">Loading profiles from the server…</string>
     <string name="pref_profile_unavailable">Profiles could not be loaded from the server. Current profile: %1$s</string>
@@ -55,32 +55,31 @@
 
     <!-- Added for this project (not in htsptvinput) -->
     <string name="pref_category_playback">Playback</string>
+    <string name="pref_category_audio">Audio</string>
+    <string name="pref_category_video">Video</string>
     <string name="pref_category_extended">Live Channels Extended</string>
-    <string name="pref_signal_status_title">Signal values</string>
-    <string name="pref_signal_status_summary">Sends signal quality, level and error rate from Tvheadend to the TV app. Requires Live Channels Extended.</string>
-    <string name="pref_detailed_errors_title">Detailed error messages</string>
-    <string name="pref_detailed_errors_summary">Reports errors such as “no signal”, “no free tuner” or “channel scrambled” to the TV app. Requires Live Channels Extended.</string>
-    <string name="pref_home_preview_title">Home screen channel</string>
-    <string name="pref_home_preview_summary">Shows the recently watched channels as a channel on the launcher home screen.</string>
-    <string name="preview_recent_channels_description">Recently watched channels</string>
-    <string name="preview_recent_channels">Recently watched</string>
-    <string name="pref_force_stereo_title">Force stereo</string>
-    <string name="pref_force_stereo_summary">Mixes multichannel audio (e.g. 5.1) down to stereo. Only turn off if the device can output multichannel audio.</string>
-    <string name="pref_direct_packets_title">Direct packet delivery</string>
-    <string name="pref_direct_packets_summary">Passes video packets to the player without an intermediate buffer, which lowers CPU load. Applies from the next channel switch.</string>
-    <string name="pref_tunneling_title">Tunnel mode</string>
-    <string name="pref_tunneling_summary">Sends video directly from the hardware decoder to the screen. This causes unexpected behavior with timeshift.</string>
+    <string name="pref_category_extended_summary">Requires the additional Live Channels Extended app.</string>
+    <string name="pref_signal_status_title">Signal Information</string>
+    <string name="pref_signal_status_summary">Provides signal strength, signal quality and error rate.</string>
+    <string name="pref_detailed_errors_title">Detailed Error Messages</string>
+    <string name="pref_detailed_errors_summary">Shows detailed errors such as “No signal” or “No free tuner”.</string>
+    <string name="pref_force_stereo_title">Force Stereo</string>
+    <string name="pref_force_stereo_summary">Converts multichannel audio, such as 5.1, to stereo.</string>
+    <string name="pref_direct_packets_title">Direct Packet Delivery</string>
+    <string name="pref_direct_packets_summary">Sends video packets directly to the player without an intermediate buffer, reducing CPU usage.</string>
+    <string name="pref_tunneling_title">Tunnel Mode</string>
+    <string name="pref_tunneling_summary">Sends video directly from the hardware decoder to the display. May cause problems with timeshift and on TV sticks.</string>
     <string name="account_label" translatable="false">Tvheadend</string>
     <string name="setup_scan_failed">The channel scan failed. See logcat.</string>
     <string name="setup_retry">Try again</string>
     <string name="server_http_port">HTTP port</string>
     <string name="server_http_port_invalid">Invalid port</string>
-    <string name="pref_channels_tv_title">TV channels</string>
-    <string name="pref_channels_radio_title">Radio channels</string>
+    <string name="pref_channels_tv_title">TV Channels</string>
+    <string name="pref_channels_radio_title">Radio Channels</string>
     <string name="pref_channels_loading">Counting channels…</string>
     <string name="pref_channels_count">%1$d channels</string>
-    <string name="pref_server_title">Tvheadend server</string>
-    <string name="pref_server_summary">Server address and login</string>
+    <string name="pref_server_title">Tvheadend Server</string>
+    <string name="pref_server_summary">Configure the server address, port and login credentials.</string>
 
     <string-array name="epg_max_time_names">
         <item>1 hour</item>
@@ -91,4 +90,6 @@
         <item>7 days</item>
         <item>8 days</item>
     </string-array>
+    <string name="pref_audio_ffmpeg_title">Decode Audio with FFmpeg</string>
+    <string name="pref_audio_ffmpeg_summary">Decodes audio with FFmpeg for consistent volume levels.</string>
 </resources>

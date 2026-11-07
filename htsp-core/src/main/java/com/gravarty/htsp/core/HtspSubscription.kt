@@ -43,6 +43,16 @@ class HtspSubscription(
     private val _startCount = MutableStateFlow(0)
     val startCount: StateFlow<Int> = _startCount.asStateFlow()
 
+    /**
+     * Aspect change seen in the video bitstream (the server reports the aspect only at
+     * subscriptionStart). Updates the stream list without counting as a stream restart.
+     */
+    fun setAspect(index: Int, num: Int, den: Int) {
+        _streams.value = _streams.value.map {
+            if (it.index == index) it.copy(aspectNum = num, aspectDen = den) else it
+        }
+    }
+
     private val _packets = MutableSharedFlow<HtspMuxPacket>(replay = 1, extraBufferCapacity = 512)
     val packets: SharedFlow<HtspMuxPacket> = _packets.asSharedFlow()
 

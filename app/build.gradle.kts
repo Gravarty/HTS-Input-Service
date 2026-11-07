@@ -35,6 +35,10 @@ android {
     }
 
     buildTypes {
+        // debug signed with the release key: debug and release builds replace each other
+        debug {
+            signingConfig = signingConfigs.getByName("release")
+        }
         release {
             isMinifyEnabled = false
             signingConfig = signingConfigs.getByName("release")
@@ -44,6 +48,13 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    // own libffmpegJNI.so (app/src/main/jniLibs, built with the mp2 decoder) wins over Jellyfin's
+    packaging {
+        jniLibs {
+            pickFirsts += "**/libffmpegJNI.so"
+        }
     }
 }
 

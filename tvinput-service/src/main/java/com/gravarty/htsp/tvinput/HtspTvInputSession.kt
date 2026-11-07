@@ -42,6 +42,8 @@ import com.gravarty.htsp.tvinput.player.HtspVfsDataSource
 import androidx.media3.ui.SubtitleView
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioSink
+import com.gravarty.htsp.tvinput.player.Mp2GainProcessor
+import com.gravarty.htsp.tvinput.player.Mp2Level
 import com.gravarty.htsp.tvinput.player.PcmOnlyAudioSink
 import com.gravarty.htsp.tvinput.player.StereoDownmix
 import androidx.media3.decoder.ffmpeg.FfmpegAudioRenderer
@@ -78,6 +80,8 @@ class HtspTvInputSession(
     private val ioScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     private var exoPlayer: ExoPlayer? = null
+    /** Suffix of the video TvTrackInfo id, counts aspect changes (see buildMediaSource). */
+    @Volatile private var videoGeneration = 0
     private var subtitleView: SubtitleView? = null
     private var captionsEnabled = false
     private var subscription: HtspSubscription? = null
@@ -300,7 +304,6 @@ class HtspTvInputSession(
             .getString(HtspSettings.KEY_PROFILE, "") ?: ""
 
         connection = connectionProvider()
-        ioScope.launch { RecentChannelsPreview.onChannelTuned(context, channelUri) }
         tuneJob = sessionScope.launch {
             val connected = withContext(Dispatchers.IO) { connection.ensureConnected() }
             if (!connected) {
@@ -394,6 +397,10 @@ class HtspTvInputSession(
         get() = context.getSharedPreferences(HtspSettings.PREF_NAME, Context.MODE_PRIVATE)
             .getBoolean(HtspSettings.KEY_FORCE_STEREO, true)
 
+    private val audioFfmpeg: Boolean
+        get() = context.getSharedPreferences(HtspSettings.PREF_NAME, Context.MODE_PRIVATE)
+            .getBoolean(HtspSettings.KEY_AUDIO_FFMPEG, true)
+
     /** Player for live TV and recordings: PCM audio, captions per TIF setting, notify* wiring. */
     private fun newPlayer(): ExoPlayer {
         // Audio is decoded to PCM (Kodi default: passthrough off). This TV reports AC3
@@ -403,15 +410,25 @@ class HtspTvInputSession(
                 context: Context,
                 enableFloatOutput: Boolean,
                 enableAudioTrackPlaybackParams: Boolean
-            ): AudioSink = PcmOnlyAudioSink(
+            ): AudioSink {
+                // fixed MP2 level correction (only active for MP2 streams decoded by ffmpeg)
+                val mp2Gain = Mp2GainProcessor()
+                return PcmOnlyAudioSink(
                 DefaultAudioSink.Builder(context)
                     // "force stereo": downmix in the plugin (hardware decoders may ignore the
                     // channel-count hint below and output 6 channels)
-                    .setAudioProcessors(if (forceStereo) arrayOf(StereoDownmix.processor()) else emptyArray())
+                    .setAudioProcessors(
+                        ArrayList<androidx.media3.common.audio.AudioProcessor>().apply {
+                            if (forceStereo) add(StereoDownmix.processor())
+                            add(mp2Gain)
+                        }.toTypedArray()
+                    )
                     .setEnableFloatOutput(enableFloatOutput)
                     .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
-                    .build()
-            )
+                    .build(),
+                mp2Gain
+                )
+            }
 
             // Surface changes (TV app closed/reopened) re-create the video codec instead of
             // MediaCodec.setOutputSurface(): some MTK decoders keep rendering to the old, invisible
@@ -445,12 +462,13 @@ class HtspTvInputSession(
                 eventListener: AudioRendererEventListener,
                 out: ArrayList<Renderer>
             ) {
-                // AC3 / E-AC3 always via ffmpeg, like Kodi: hardware Dolby decoders differ per
-                // device in applying dialnorm (measured: Vestel -8 dB, PEAQ none), ffmpeg never
-                // applies it, so AC3 plays at the same level as MP2 on every device.
-                // All other formats stay on the hardware decoders.
+                // Setting "Decode audio with ffmpeg" (default on, like Kodi): all audio is decoded
+                // by ffmpeg, so every format behaves the same on every device (hardware decoders
+                // differ per device, e.g. in applying Dolby dialnorm). Off: hardware decoders, with
+                // ffmpeg only for formats the device cannot decode.
+                val audioFfmpeg = this@HtspTvInputSession.audioFfmpeg
                 val selector = MediaCodecSelector { mimeType, requiresSecure, requiresTunneling ->
-                    if (mimeType == MimeTypes.AUDIO_AC3 || mimeType == MimeTypes.AUDIO_E_AC3) emptyList()
+                    if (audioFfmpeg) emptyList()
                     else mediaCodecSelector.getDecoderInfos(mimeType, requiresSecure, requiresTunneling)
                 }
                 out.add(object : MediaCodecAudioRenderer(
@@ -466,7 +484,7 @@ class HtspTvInputSession(
                             }
                         }
                 })
-                // ffmpeg: AC3 / E-AC3, and any other format the device has no decoder for
+                // ffmpeg: all audio (setting on), otherwise formats the device has no decoder for
                 out.add(FfmpegAudioRenderer(eventHandler, eventListener, audioSink))
             }
         }
@@ -855,9 +873,9 @@ class HtspTvInputSession(
             return true
         }
 
-        // TvTrackInfo id == TrackGroup id == HTSP stream index
+        // TvTrackInfo id == TrackGroup id == HTSP stream index (video: plus ".<generation>")
         val group = player.currentTracks.groups
-            .firstOrNull { it.type == trackType && it.mediaTrackGroup.id == trackId } ?: return false
+            .firstOrNull { it.type == trackType && it.mediaTrackGroup.id == trackId.substringBefore('.') } ?: return false
         player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
             .setTrackTypeDisabled(trackType, false)
             .setOverrideForType(TrackSelectionOverride(group.mediaTrackGroup, 0))
@@ -899,12 +917,11 @@ class HtspTvInputSession(
     private fun buildMediaSource(sub: HtspSubscription): HtspMediaSource =
         HtspMediaSource(sub, ioScope) { index, num, den ->
             sessionScope.launch {
-                val streams = sub.streams.value.map {
-                    if (it.index == index) it.copy(aspectNum = num, aspectDen = den) else it
-                }
-                publishTracks(TvTrackInfoMapper.toTvTrackInfoList(streams))
-                // re-select so Live Channels re-reads size / pixel aspect of the video track
-                notifyTrackSelected(TvTrackInfo.TYPE_VIDEO, index.toString())
+                // Live Channels ignores a re-selected track with the same id, so the video track
+                // gets a new id: observeStreams() then republishes the tracks (new width / pixel
+                // aspect) and selects the new id, like a fresh tune does.
+                videoGeneration++
+                sub.setAspect(index, num, den)
             }
         }
 
@@ -938,7 +955,11 @@ class HtspTvInputSession(
         sub.streams
             .onEach { streams ->
                 if (streams.isNotEmpty()) HtspLog.i("subscriptionStart: " + streams.joinToString { "${it.index}:${it.type} ${it.width}x${it.height} ${it.aspectNum}:${it.aspectDen}" })
-                val tvTracks = TvTrackInfoMapper.toTvTrackInfoList(streams)
+                // MP2 streams for the fixed level correction (only when ffmpeg decodes the audio)
+                Mp2Level.streamIds = if (audioFfmpeg) {
+                    streams.filter { it.type == "MPEG2AUDIO" }.map { it.index.toString() }.toSet()
+                } else emptySet()
+                val tvTracks = TvTrackInfoMapper.toTvTrackInfoList(streams, videoGeneration)
                 publishTracks(tvTracks)
                 tvTracks.firstOrNull { it.type == TvTrackInfo.TYPE_VIDEO }?.let {
                     notifyTrackSelected(TvTrackInfo.TYPE_VIDEO, it.id)
