@@ -189,8 +189,6 @@ class HtspSubscription(
             "subscriptionStop" -> {
                 // pvr.hts ParseSubscriptionStop() does nothing: tvheadend sends it before a
                 // stream restart (SMT_STOP), followed by a new subscriptionStart.
-                println("[HTSP] subscriptionStop: status=${msg.getString("status")} " +
-                    "subscriptionError=${msg.getString("subscriptionError")}")
             }
             "signalStatus" -> {
                 _signalStatus.value = SignalStatus.fromHtsMessage(msg)

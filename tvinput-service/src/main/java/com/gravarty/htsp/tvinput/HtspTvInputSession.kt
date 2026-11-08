@@ -25,6 +25,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import android.media.MediaFormat
 import android.os.Build
 import android.os.Handler
+import android.os.Looper
 import androidx.media3.common.Format
 import androidx.media3.common.MimeTypes
 import androidx.media3.exoplayer.Renderer
@@ -45,6 +46,7 @@ import androidx.media3.exoplayer.audio.DefaultAudioSink
 import com.gravarty.htsp.tvinput.player.Mp2GainProcessor
 import com.gravarty.htsp.tvinput.player.Mp2Level
 import com.gravarty.htsp.tvinput.player.PcmOnlyAudioSink
+import com.gravarty.htsp.tvinput.player.PlayerGate
 import com.gravarty.htsp.tvinput.player.StereoDownmix
 import androidx.media3.decoder.ffmpeg.FfmpegAudioRenderer
 import com.gravarty.htsp.core.HtspConnection
@@ -82,6 +84,8 @@ class HtspTvInputSession(
     private var exoPlayer: ExoPlayer? = null
     /** Suffix of the video TvTrackInfo id, counts aspect changes (see buildMediaSource). */
     @Volatile private var videoGeneration = 0
+    /** Invalidates pending aspect changes (stream restart, release): their pts belongs to the old timeline. */
+    @Volatile private var aspectEpoch = 0
     private var subtitleView: SubtitleView? = null
     private var captionsEnabled = false
     private var subscription: HtspSubscription? = null
@@ -273,14 +277,14 @@ class HtspTvInputSession(
     }
 
     override fun onSetSurface(surface: Surface?): Boolean {
-        HtspLog.i("onSetSurface ${surface?.let { "valid=${it.isValid} ${System.identityHashCode(it)}" }} " +
-            "(player ${if (exoPlayer != null) "running" else "none"})")
+        HtspLog.i { "onSetSurface ${surface?.let { "valid=${it.isValid} ${System.identityHashCode(it)}" }} " +
+            "(player ${if (exoPlayer != null) "running" else "none"})" }
         this.surface = surface
         exoPlayer?.let { player ->
             player.setVideoSurface(surface)
             // Player stopped by a decoder error on the destroyed surface: resume on the new one
             if (surface != null && surface.isValid && player.playerError != null) {
-                HtspLog.i("Resuming after surface loss")
+                HtspLog.i { "Resuming after surface loss" }
                 player.prepare()
             }
         }
@@ -298,7 +302,7 @@ class HtspTvInputSession(
         releasePlayerAndSubscription()
 
         val htspChannelId = getHtspChannelIdFromUri(channelUri)
-        HtspLog.i("onTune $channelUri -> HTSP channel $htspChannelId")
+        HtspLog.i { "onTune $channelUri -> HTSP channel $htspChannelId" }
         if (htspChannelId == null) return false
         val profile = context.getSharedPreferences(HtspSettings.PREF_NAME, Context.MODE_PRIVATE)
             .getString(HtspSettings.KEY_PROFILE, "") ?: ""
@@ -312,7 +316,7 @@ class HtspTvInputSession(
                 return@launch
             }
 
-            HtspLog.i("Connected, subscribing (profile='$profile')")
+            HtspLog.i { "Connected, subscribing (profile='$profile')" }
             val direct = context.getSharedPreferences(HtspSettings.PREF_NAME, Context.MODE_PRIVATE)
                 .getBoolean(HtspSettings.KEY_DIRECT_PACKETS, true)
             val sub = HtspSubscription(connection, directPackets = direct)
@@ -326,7 +330,7 @@ class HtspTvInputSession(
                 if (awaitingFirstPacket) {
                     awaitingFirstPacket = false
                     startTimeMs = System.currentTimeMillis()
-                    HtspLog.i("<- first muxpkt (stream ${packet.streamIndex})")
+                    HtspLog.i { "<- first muxpkt (stream ${packet.streamIndex})" }
                 }
             }
             routingJob = ioScope.launch {
@@ -336,14 +340,16 @@ class HtspTvInputSession(
                         if (msg.method !in subscriptionMethods) return@collect
                         if (msg.getLong("subscriptionId") == sub.subscriptionId) {
                             if (msg.method != "muxpkt") {
-                                val fields = msg.fields.mapValues { (_, v) ->
-                                    when (v) {
-                                        is com.gravarty.htsp.core.HtsBin -> "<${v.length} bytes>"
-                                        is List<*> -> "<list ${v.size}>"
-                                        else -> v
+                                HtspLog.i {
+                                    val fields = msg.fields.mapValues { (_, v) ->
+                                        when (v) {
+                                            is com.gravarty.htsp.core.HtsBin -> "<${v.length} bytes>"
+                                            is List<*> -> "<list ${v.size}>"
+                                            else -> v
+                                        }
                                     }
+                                    "<- ${msg.method} $fields"
                                 }
-                                HtspLog.i("<- ${msg.method} $fields")
                             }
                             if (msg.method == "subscriptionStart") {
                                 learnNetworkType(msg)
@@ -374,13 +380,14 @@ class HtspTvInputSession(
                 HtspLog.e("subscribe failed", e)
                 false
             }
-            HtspLog.i("subscribe -> $subscribed (subscriptionId ${sub.subscriptionId})")
+            HtspLog.i { "subscribe -> $subscribed (subscriptionId ${sub.subscriptionId})" }
             if (!subscribed) {
                 HtspLog.e("Failed to subscribe to channel $htspChannelId")
                 notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_UNKNOWN)
                 return@launch
             }
 
+            PlayerGate.awaitFree()
             val player = newPlayer()
             val source = buildMediaSource(sub)
             mediaSource = source
@@ -493,6 +500,7 @@ class HtspTvInputSession(
             .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, !captionsEnabled)
             .build()
         exoPlayer = player
+        PlayerGate.onCreated(player)
         // Multimedia tunneling (source.android.com/docs/devices/tv/multimedia-tunneling):
         // ExoPlayer only uses it if the decoder supports it, otherwise plays as before.
         val tunneling = context.getSharedPreferences(HtspSettings.PREF_NAME, Context.MODE_PRIVATE)
@@ -513,7 +521,7 @@ class HtspTvInputSession(
         player.addListener(object : Player.Listener {
             override fun onTracksChanged(tracks: androidx.media3.common.Tracks) {
                 tracks.groups.forEach { g ->
-                    HtspLog.i("Track ${g.mediaTrackGroup.getFormat(0).sampleMimeType} supported=${g.isSupported} selected=${g.isSelected}")
+                    HtspLog.i { "Track ${g.mediaTrackGroup.getFormat(0).sampleMimeType} supported=${g.isSupported} selected=${g.isSelected}" }
                 }
                 // Report the audio track the player actually plays (TrackGroup id = TvTrackInfo id),
                 // not just the first one in the list
@@ -527,7 +535,7 @@ class HtspTvInputSession(
             }
 
             override fun onRenderedFirstFrame() {
-                HtspLog.i("First frame rendered")
+                HtspLog.i { "First frame rendered" }
                 firstFrameShown = true
                 buffering = false
                 endSeekPending()
@@ -535,7 +543,7 @@ class HtspTvInputSession(
             }
 
             override fun onPlaybackStateChanged(state: Int) {
-                HtspLog.i("Player state $state (1 idle, 2 buffering, 3 ready, 4 ended), buffered ${player.bufferedPosition} ms")
+                HtspLog.i { "Player state $state (1 idle, 2 buffering, 3 ready, 4 ended), buffered ${player.bufferedPosition} ms" }
                 if (exoPlayer !== player) return
                 when (state) {
                     // Re-buffering after playback started: let the TV app show its loading state
@@ -577,7 +585,7 @@ class HtspTvInputSession(
             }
         })
         player.setVideoSurface(surface)
-        startPlaybackStats(player)
+        if (HtspLog.enabled) startPlaybackStats(player) // debug builds only
         return player
     }
 
@@ -596,7 +604,7 @@ class HtspTvInputSession(
                 if (exoPlayer !== player) return@launch
                 val c = player.videoDecoderCounters
                 if (c == null) {
-                    HtspLog.i("Stats: no video decoder counters (state ${player.playbackState})")
+                    HtspLog.i { "Stats: no video decoder counters (state ${player.playbackState})" }
                     continue
                 }
                 c.ensureUpdated()
@@ -608,12 +616,10 @@ class HtspTvInputSession(
                 lastSkipped = c.skippedOutputBufferCount
                 val display = (context.getSystemService(Context.DISPLAY_SERVICE) as android.hardware.display.DisplayManager)
                     .getDisplay(android.view.Display.DEFAULT_DISPLAY)
-                HtspLog.i(
-                    "Stats 5s: rendered $rendered (${rendered / 5} fps), dropped $dropped, skipped $skipped, " +
+                HtspLog.i { "Stats 5s: rendered $rendered (${rendered / 5} fps), dropped $dropped, skipped $skipped, " +
                         "stream ${player.videoFormat?.frameRate} fps ${player.videoFormat?.width}x${player.videoFormat?.height}, " +
                         "decoder ${player.videoFormat?.sampleMimeType}, display ${display?.refreshRate} Hz, " +
-                        "tunneling ${player.isTunnelingEnabled}"
-                )
+                        "tunneling ${player.isTunnelingEnabled}" }
             }
         }
     }
@@ -626,7 +632,7 @@ class HtspTvInputSession(
                 // tvheadend only sends timeshiftStatus when timeshift is enabled on the server
                 if (status != null && !timeshiftAnnounced) {
                     timeshiftAnnounced = true
-                    HtspLog.i("Timeshift available")
+                    HtspLog.i { "Timeshift available" }
                     notifyTimeShiftStatusChanged(TvInputManager.TIME_SHIFT_STATUS_AVAILABLE)
                 }
             }
@@ -687,7 +693,7 @@ class HtspTvInputSession(
     private suspend fun trickPlay(speed: Float) {
         val sub = subscription ?: return
         val player = exoPlayer ?: return
-        HtspLog.i("Trick play x$speed")
+        HtspLog.i { "Trick play x$speed" }
         runCatching { withContext(Dispatchers.IO) { sub.setSpeed(HtspSubscription.SPEED_NORMAL) } }
         player.playWhenReady = false
 
@@ -721,7 +727,7 @@ class HtspTvInputSession(
     /** Same stepping as live trick play (Kodi seeks repeatedly), on the recording's timeline. */
     private suspend fun trickPlayRecording(speed: Float) {
         val player = exoPlayer ?: return
-        HtspLog.i("Recording trick play x$speed")
+        HtspLog.i { "Recording trick play x$speed" }
         player.playWhenReady = false
         val anchorClock = SystemClock.elapsedRealtime()
         val anchorPos = player.currentPosition
@@ -785,7 +791,8 @@ class HtspTvInputSession(
                 notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_UNKNOWN)
                 return@launch
             }
-            HtspLog.i("Playing recording $uri (running: $growing)")
+            HtspLog.i { "Playing recording $uri (running: $growing)" }
+            PlayerGate.awaitFree()
             val player = newPlayer()
             val source = ProgressiveMediaSource.Factory(
                 HtspVfsDataSource.Factory(conn, growing), DefaultExtractorsFactory()
@@ -835,7 +842,7 @@ class HtspTvInputSession(
             }
             return
         }
-        HtspLog.i("Seek to $targetUs µs -> server skipped to $skippedUs µs")
+        HtspLog.i { "Seek to $targetUs µs -> server skipped to $skippedUs µs" }
         exoPlayer?.seekTo(skippedUs / 1000)
     }
 
@@ -915,13 +922,31 @@ class HtspTvInputSession(
     }
 
     private fun buildMediaSource(sub: HtspSubscription): HtspMediaSource =
-        HtspMediaSource(sub, ioScope) { index, num, den ->
+        HtspMediaSource(sub, ioScope) { index, num, den, ptsUs ->
+            val epoch = aspectEpoch
+            var applied = false
+            val applyAspect = {
+                if (!applied && epoch == aspectEpoch) {
+                    applied = true
+                    // Live Channels ignores a re-selected track with the same id, so the video track
+                    // gets a new id: observeStreams() then republishes the tracks (new width / pixel
+                    // aspect) and selects the new id, like a fresh tune does.
+                    videoGeneration++
+                    sub.setAspect(index, num, den)
+                }
+            }
             sessionScope.launch {
-                // Live Channels ignores a re-selected track with the same id, so the video track
-                // gets a new id: observeStreams() then republishes the tracks (new width / pixel
-                // aspect) and selects the new id, like a fresh tune does.
-                videoGeneration++
-                sub.setAspect(index, num, den)
+                // The change is detected when the packet arrives, but the picture is shown later
+                // (buffer). The player delivers a message when playback reaches the packet's pts
+                // (no polling). The timeout keeps a pts / position mismatch from blocking the change.
+                val player = exoPlayer
+                if (player == null) { applyAspect(); return@launch }
+                player.createMessage { _, _ -> applyAspect() }
+                    .setLooper(Looper.getMainLooper())
+                    .setPosition(ptsUs / 1000)
+                    .send()
+                delay(ASPECT_WAIT_MAX_MS)
+                applyAspect()
             }
         }
 
@@ -939,7 +964,8 @@ class HtspTvInputSession(
             .onEach { count ->
                 if (count <= handled || exoPlayer !== player) return@onEach
                 handled = count
-                HtspLog.i("Stream restart (subscriptionStart #$count), re-preparing player")
+                aspectEpoch++
+                HtspLog.i { "Stream restart (subscriptionStart #$count), re-preparing player" }
                 stopTrickPlay()
                 seekJob?.cancel()
                 awaitingFirstPacket = true
@@ -954,7 +980,7 @@ class HtspTvInputSession(
     private fun observeStreams(sub: HtspSubscription) {
         sub.streams
             .onEach { streams ->
-                if (streams.isNotEmpty()) HtspLog.i("subscriptionStart: " + streams.joinToString { "${it.index}:${it.type} ${it.width}x${it.height} ${it.aspectNum}:${it.aspectDen}" })
+                if (streams.isNotEmpty()) HtspLog.i { "subscriptionStart: " + streams.joinToString { "${it.index}:${it.type} ${it.width}x${it.height} ${it.aspectNum}:${it.aspectDen}" } }
                 // MP2 streams for the fixed level correction (only when ffmpeg decodes the audio)
                 Mp2Level.streamIds = if (audioFfmpeg) {
                     streams.filter { it.type == "MPEG2AUDIO" }.map { it.index.toString() }.toSet()
@@ -969,6 +995,7 @@ class HtspTvInputSession(
     }
 
     private fun releasePlayerAndSubscription() {
+        aspectEpoch++
         statsJob?.cancel()
         statsJob = null
         recordingPlayback = false
@@ -988,6 +1015,7 @@ class HtspTvInputSession(
         val oldPlayer = exoPlayer
         exoPlayer = null
         oldPlayer?.release()
+        oldPlayer?.let { PlayerGate.onReleased(it) }
         routingJob?.cancel()
         routingJob = null
 
@@ -1002,6 +1030,8 @@ class HtspTvInputSession(
     }
 
     private companion object {
+        /** Aspect change: longest wait for the playback position to reach the change. */
+        const val ASPECT_WAIT_MAX_MS = 15_000L
         /** Interval between trick-play seeks (own choice, pvr.hts leaves this to Kodi's player). */
         const val TRICK_STEP_MS = 500L
         /** Rewind/fast forward: loading state only if the picture of a step is this late */

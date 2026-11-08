@@ -79,7 +79,7 @@ class HtspRecordingSession(
                 return@launch
             }
             dvrId = result.id
-            HtspLog.i("Recording started on server: dvr ${result.id} (event $eventId)")
+            HtspLog.i { "Recording started on server: dvr ${result.id} (event $eventId)" }
         }
     }
 

@@ -19,7 +19,7 @@ class HtspMediaSource(
     private val subscription: HtspSubscription,
     private val scope: CoroutineScope,
     private val mediaItem: MediaItem = MediaItem.fromUri("htsp://live"),
-    private val onAspectChanged: (Int, Int, Int) -> Unit = { _, _, _ -> }
+    private val onAspectChanged: (Int, Int, Int, Long) -> Unit = { _, _, _, _ -> }
 ) : BaseMediaSource() {
 
     @Volatile

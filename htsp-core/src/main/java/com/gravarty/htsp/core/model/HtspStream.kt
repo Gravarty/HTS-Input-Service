@@ -47,6 +47,8 @@ data class HtspStream(
         if (language != other.language) return false
         if (width != other.width) return false
         if (height != other.height) return false
+        if (aspectNum != other.aspectNum) return false
+        if (aspectDen != other.aspectDen) return false
         if (meta != null) {
             if (other.meta == null) return false
             if (!meta.contentEquals(other.meta)) return false
@@ -58,6 +60,8 @@ data class HtspStream(
     override fun hashCode(): Int {
         var result = index
         result = 31 * result + type.hashCode()
+        result = 31 * result + aspectNum
+        result = 31 * result + aspectDen
         result = 31 * result + (meta?.contentHashCode() ?: 0)
         return result
     }

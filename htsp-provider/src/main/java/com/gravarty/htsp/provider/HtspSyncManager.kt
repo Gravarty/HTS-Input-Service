@@ -50,7 +50,7 @@ class HtspSyncManager(
         for (channel in channels) for (network in channel.networks) {
             if (network !in probes && !HtspNetworkTypes.isKnown(context, network)) probes[network] = channel
         }
-        if (probes.isNotEmpty()) HtspLog.e("CHTYPE probe networks ${probes.keys}") // TEMPORARY diagnostic
+        if (probes.isNotEmpty()) HtspLog.i { "CHTYPE probe networks ${probes.keys}" }
         for ((network, channel) in probes) {
             val sub = HtspSubscription(connection)
             val start = coroutineScope {
@@ -105,7 +105,7 @@ class HtspSyncManager(
             if (i % 25 == 0) onProgress("Loading logos ${i + 1}/${channels.size}...")
         }
         syncRecordings(htspToDbId)
-        HtspLog.i("Sync done: ${htspToDbId.size} channels, ${events.size} events, $logos logos")
+        HtspLog.i { "Sync done: ${htspToDbId.size} channels, ${events.size} events, $logos logos" }
     } }
 
     /**
@@ -162,10 +162,8 @@ class HtspSyncManager(
         }
         val inserted = insertPrograms(htspToDbId, events)
         if (recordingsChanged || changedChannelIds.isNotEmpty()) syncRecordings(htspToDbId)
-        HtspLog.i(
-            "Live update: channels ${changedChannelIds.size}, events changed ${changedEventIds.size} " +
-            "(in repo ${events.size}), deleted ${deletedEventIds.size} -> rows removed $removed, inserted $inserted"
-        )
+        HtspLog.i { "Live update: channels ${changedChannelIds.size}, events changed ${changedEventIds.size} " +
+            "(in repo ${events.size}), deleted ${deletedEventIds.size} -> rows removed $removed, inserted $inserted" }
     } }
 
     /**
@@ -209,7 +207,7 @@ class HtspSyncManager(
         for (chunk in ops.chunked(100)) resolver.applyBatch(TvContract.AUTHORITY, ArrayList(chunk))
         val inserts = wanted.filterKeys { it !in seen }.values
         for (v in inserts) resolver.insert(TvContract.RecordedPrograms.CONTENT_URI, v)
-        HtspLog.i("Recordings: ${stale.size} removed, ${ops.size} updated, ${inserts.size} inserted")
+        HtspLog.i { "Recordings: ${stale.size} removed, ${ops.size} updated, ${inserts.size} inserted" }
     }
 
     /** htspIds inserted by the last syncChannels() call (per input) and by the whole sync */
@@ -250,7 +248,7 @@ class HtspSyncManager(
         val rowCount = resolver.query(channelsUri, arrayOf(TvContract.Channels._ID), null, null, null)
             ?.use { it.count } ?: 0
         if (rowCount > wanted.size * 2 + 100) {
-            HtspLog.i("$rowCount channel rows found, wiping input before sync")
+            HtspLog.i { "$rowCount channel rows found, wiping input before sync" }
             resolver.delete(channelsUri, null, null)
         }
 
@@ -307,10 +305,12 @@ class HtspSyncManager(
         var insertIdx = 0
         newlyInserted.clear()
         newlyInserted.addAll(insertOrder)
-        // TEMPORARY diagnostic (error level = visible in release): type of newly inserted rows
-        if (insertOrder.isNotEmpty()) HtspLog.e("CHTYPE insert $inputId: ${insertOrder.size} rows, types " +
+        // Debug builds only: type of newly inserted rows
+        if (insertOrder.isNotEmpty()) HtspLog.i {
+            "CHTYPE insert $inputId: ${insertOrder.size} rows, types " +
             insertOrder.groupingBy { newValues.getValue(it).getAsString(TvContract.Channels.COLUMN_TYPE) }.eachCount() +
-            ", known networks ${channels.flatMap { it.networks }.distinct().associateWith { HtspNetworkTypes.isKnown(context, it) }}")
+            ", known networks ${channels.flatMap { it.networks }.distinct().associateWith { HtspNetworkTypes.isKnown(context, it) }}"
+        }
         for (chunk in ops.chunked(100)) {
             val results = resolver.applyBatch(TvContract.AUTHORITY, ArrayList(chunk))
             for (r in results) {
@@ -318,8 +318,8 @@ class HtspSyncManager(
                 result[insertOrder[insertIdx++]] = ContentUris.parseId(uri)
             }
         }
-        HtspLog.i("Channels: ${existing.size - unchanged.size} updated, ${unchanged.size} unchanged, " +
-            "$insertIdx inserted, ${stale.size} deleted")
+        HtspLog.i { "Channels: ${existing.size - unchanged.size} updated, ${unchanged.size} unchanged, " +
+            "$insertIdx inserted, ${stale.size} deleted" }
         return result
     }
 
@@ -367,7 +367,7 @@ class HtspSyncManager(
         for (chunk in inserts.chunked(200)) {
             resolver.bulkInsert(TvContract.Programs.CONTENT_URI, chunk.toTypedArray())
         }
-        HtspLog.i("Full EPG write: ${stale.size} removed, ${ops.size} updated, ${inserts.size} inserted, ${seen.size - ops.size} unchanged")
+        HtspLog.i { "Full EPG write: ${stale.size} removed, ${ops.size} updated, ${inserts.size} inserted, ${seen.size - ops.size} unchanged" }
     }
 
     /** Returns the number of inserted rows; skipped events are logged. */
@@ -381,7 +381,7 @@ class HtspSyncManager(
             HtspProgramMapper.toContentValues(e, dbId)
         }
         if (noChannel > 0 || badTime > 0) {
-            HtspLog.i("Programs skipped: $noChannel without listed channel, $badTime with invalid time")
+            HtspLog.i { "Programs skipped: $noChannel without listed channel, $badTime with invalid time" }
         }
         // Binder transactions are limited to ~1 MB; one big bulkInsert fails silently.
         var inserted = 0

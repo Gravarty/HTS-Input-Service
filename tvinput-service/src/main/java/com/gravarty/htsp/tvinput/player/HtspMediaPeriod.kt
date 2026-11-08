@@ -44,7 +44,7 @@ class HtspMediaPeriod(
     private val allocator: Allocator,
     private val scope: CoroutineScope,
     /** MPEG-2 aspect change seen in the stream: stream index, aspect num, aspect den. */
-    private val onAspectChanged: (Int, Int, Int) -> Unit = { _, _, _ -> }
+    private val onAspectChanged: (Int, Int, Int, Long) -> Unit = { _, _, _, _ -> }
 ) : MediaPeriod {
 
     private class Track(
@@ -64,6 +64,7 @@ class HtspMediaPeriod(
         var aspectCode = -1        // last confirmed aspect_ratio_information
         var pendingAspectCode = -1
         var pendingCount = 0
+        var pendingPtsUs = 0L      // pts of the first sequence header with the pending aspect
         var aacConfigured = !isAac
         val isDolby = format.sampleMimeType == MimeTypes.AUDIO_AC3 || format.sampleMimeType == MimeTypes.AUDIO_E_AC3
         var dolbyChannels = -1     // channel count from the last AC3/E-AC3 frame header
@@ -90,7 +91,7 @@ class HtspMediaPeriod(
         job = scope.launch {
             val streams = subscription.streams.first { it.isNotEmpty() }
             buildTracks(streams)
-            HtspLog.i("MediaPeriod prepared: ${trackGroups.length} usable tracks of ${streams.size}")
+            HtspLog.i { "MediaPeriod prepared: ${trackGroups.length} usable tracks of ${streams.size}" }
             prepared = true
             callback.onPrepared(this@HtspMediaPeriod)
             if (subscription.directPackets) {
@@ -148,12 +149,12 @@ class HtspMediaPeriod(
             if (!packet.isKeyframe) return
             track.started = true
         }
-        if (track.queue.writeIndex == 0) HtspLog.i("First packet on stream ${track.index} pts ${packet.pts}")
+        if (track.queue.writeIndex == 0) HtspLog.i { "First packet on stream ${track.index} pts ${packet.pts}" }
         val timeUs = packet.pts
 
         var data = packet.payload
         if (track.isAac) data = stripAdts(track, data) ?: return
-        if (track.isMpeg2 && packet.isKeyframe) checkMpeg2Aspect(track, data)
+        if (track.isMpeg2 && packet.isKeyframe) checkMpeg2Aspect(track, data, timeUs)
         if (track.isDolby) checkDolbyChannels(track, data)
 
         track.dvbParser?.let { parser ->
@@ -182,7 +183,7 @@ class HtspMediaPeriod(
         val first = track.dolbyChannels == -1
         track.dolbyChannels = channels
         if (first && channels == track.format.channelCount) return
-        HtspLog.i("Stream ${track.index}: Dolby channel count -> $channels")
+        HtspLog.i { "Stream ${track.index}: Dolby channel count -> $channels" }
         track.queue.format(track.format.buildUpon().setChannelCount(channels).build())
     }
 
@@ -239,7 +240,7 @@ class HtspMediaPeriod(
      * sequence headers in a row (same rule as tvheadend's es_meta_change) to avoid flapping.
      * Only the track info changes; the decoder is not reconfigured.
      */
-    private fun checkMpeg2Aspect(track: Track, data: HtsBin) {
+    private fun checkMpeg2Aspect(track: Track, data: HtsBin, timeUs: Long) {
         var i = 0
         while (i + 7 < data.length) {
             if (data[i].toInt() == 0 && data[i + 1].toInt() == 0 && data[i + 2].toInt() == 1 &&
@@ -256,11 +257,11 @@ class HtspMediaPeriod(
                         if (++track.pendingCount >= 2) {
                             track.aspectCode = code
                             track.pendingCount = 0
-                            HtspLog.i("MPEG-2 aspect changed on stream ${track.index}: $num:$den")
-                            onAspectChanged(track.index, num, den)
+                            HtspLog.i { "MPEG-2 aspect changed on stream ${track.index}: $num:$den" }
+                            onAspectChanged(track.index, num, den, track.pendingPtsUs)
                         }
                     }
-                    else -> { track.pendingAspectCode = code; track.pendingCount = 1 }
+                    else -> { track.pendingAspectCode = code; track.pendingCount = 1; track.pendingPtsUs = timeUs }
                 }
                 return
             }
@@ -313,7 +314,7 @@ class HtspMediaPeriod(
             val selection = selections[i] ?: continue
             if (streams[i] != null) continue
             val index = selection.trackGroup.id.toIntOrNull() ?: continue
-            HtspLog.i("Selected stream $index (${selection.trackGroup.getFormat(0).sampleMimeType})")
+            HtspLog.i { "Selected stream $index (${selection.trackGroup.getFormat(0).sampleMimeType})" }
             val track = tracks.get(index) ?: continue
             streams[i] = HtspSampleStream(index, track.queue)
             streamResetFlags[i] = true
