@@ -13,7 +13,7 @@ import kotlinx.coroutines.withTimeoutOrNull
  * The TV's hardware decoder has one display path. A new decoder created while the previous
  * session's decoder is still alive gets no display path and falls back to GPU output without
  * deinterlacing (MediaTek resource manager: "AcquireDispBuf ... change to planar mode").
- * A new player therefore waits until the previous players of this process are released and the
+ * Only used when a recording starts (live zapping never had the problem). A new player therefore waits until the previous players of this process are released and the
  * resource manager had a moment to free the display path.
  */
 object PlayerGate {

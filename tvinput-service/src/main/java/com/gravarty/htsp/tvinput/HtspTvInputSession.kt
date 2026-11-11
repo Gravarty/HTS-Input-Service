@@ -10,8 +10,11 @@ import android.media.tv.TvTrackInfo
 import android.media.PlaybackParams
 import android.net.Uri
 import android.os.SystemClock
+import android.graphics.Color
 import android.view.Surface
 import android.view.View
+import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.PlaybackException
@@ -68,6 +71,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onSubscription
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 @OptIn(UnstableApi::class)
 class HtspTvInputSession(
@@ -219,8 +223,22 @@ class HtspTvInputSession(
         setOverlayViewEnabled(true)
     }
 
-    override fun onCreateOverlayView(): View =
-        SubtitleView(context).also { subtitleView = it }
+    /** Black layer above the video: the codec switch of trick play fades through black instead of cutting. */
+    private var fadeView: View? = null
+
+    override fun onCreateOverlayView(): View {
+        val root = FrameLayout(context)
+        val match = ViewGroup.LayoutParams.MATCH_PARENT
+        root.addView(SubtitleView(context).also { subtitleView = it }, ViewGroup.LayoutParams(match, match))
+        val fade = View(context).apply { setBackgroundColor(Color.BLACK); alpha = 0f }
+        fadeView = fade
+        root.addView(fade, ViewGroup.LayoutParams(match, match))
+        return root
+    }
+
+    private fun fade(to: Float, durationMs: Long) {
+        fadeView?.animate()?.alpha(to)?.setDuration(durationMs)?.start()
+    }
 
     override fun onRelease() {
         releasePlayerAndSubscription()
@@ -387,7 +405,6 @@ class HtspTvInputSession(
                 return@launch
             }
 
-            PlayerGate.awaitFree()
             val player = newPlayer()
             val source = buildMediaSource(sub)
             mediaSource = source
@@ -504,7 +521,8 @@ class HtspTvInputSession(
         // Multimedia tunneling (source.android.com/docs/devices/tv/multimedia-tunneling):
         // ExoPlayer only uses it if the decoder supports it, otherwise plays as before.
         val tunneling = context.getSharedPreferences(HtspSettings.PREF_NAME, Context.MODE_PRIVATE)
-            .getBoolean(HtspSettings.KEY_TUNNELING, false) // off: breaks timeshift rewind on some TVs
+            .getBoolean(HtspSettings.KEY_TUNNELING, false) // rewind / fast forward switch it off temporarily
+        tunnelingPref = tunneling
         (player.trackSelector as? DefaultTrackSelector)?.let {
             it.setParameters(
                 it.buildUponParameters()
@@ -536,6 +554,7 @@ class HtspTvInputSession(
 
             override fun onRenderedFirstFrame() {
                 HtspLog.i { "First frame rendered" }
+                frameSignal?.complete(Unit)
                 firstFrameShown = true
                 buffering = false
                 endSeekPending()
@@ -648,7 +667,7 @@ class HtspTvInputSession(
     }
 
     override fun onTimeShiftResume() {
-        stopTrickPlay()
+        endTrickPlay()
         if (recordingPlayback) { exoPlayer?.playWhenReady = true; return }
         val sub = subscription ?: return
         ioScope.launch { runCatching { sub.setSpeed(HtspSubscription.SPEED_NORMAL) } }
@@ -657,7 +676,7 @@ class HtspTvInputSession(
     }
 
     override fun onTimeShiftSeekTo(timeMs: Long) {
-        stopTrickPlay()
+        endTrickPlay()
         if (recordingPlayback) { exoPlayer?.seekTo(timeMs.coerceAtLeast(0)); return }
         seekJob?.cancel()
         seekJob = sessionScope.launch { seekTo(timeMs) }
@@ -673,7 +692,7 @@ class HtspTvInputSession(
         stopTrickPlay()
         if (recordingPlayback) {
             when (speed) {
-                1f -> exoPlayer?.playWhenReady = true
+                1f -> { endTrickPlay(); exoPlayer?.playWhenReady = true }
                 0f -> Unit
                 else -> trickJob = sessionScope.launch { trickPlayRecording(speed) }
             }
@@ -681,6 +700,7 @@ class HtspTvInputSession(
         }
         val sub = subscription ?: return
         if (speed == 1f) {
+            endTrickPlay()
             ioScope.launch { runCatching { sub.setSpeed(HtspSubscription.SPEED_NORMAL) } }
             exoPlayer?.let { beginResumeWait(it) }
             exoPlayer?.playWhenReady = true
@@ -694,8 +714,10 @@ class HtspTvInputSession(
         val sub = subscription ?: return
         val player = exoPlayer ?: return
         HtspLog.i { "Trick play x$speed" }
+        tunnelRestoreJob?.cancel()
         runCatching { withContext(Dispatchers.IO) { sub.setSpeed(HtspSubscription.SPEED_NORMAL) } }
         player.playWhenReady = false
+        fadeBackPending = switchTunnelingFaded(player, false)
 
         val anchorClock = SystemClock.elapsedRealtime()
         val anchorPos = onTimeShiftGetCurrentPosition()
@@ -712,14 +734,16 @@ class HtspTvInputSession(
                 target <= bufferStart -> {       // reached the oldest buffered position
                     seekTo(bufferStart, trickStep = true)
                     player.playWhenReady = true
+                    restoreTunnelingWhenReady(player)
                     return
                 }
                 target >= bufferEnd -> {         // caught up with live
                     seekTo(bufferEnd, trickStep = true)
                     player.playWhenReady = true
+                    restoreTunnelingWhenReady(player)
                     return
                 }
-                else -> seekTo(target, trickStep = true)
+                else -> stepWithFade { seekTo(target, trickStep = true) }
             }
         }
     }
@@ -728,7 +752,9 @@ class HtspTvInputSession(
     private suspend fun trickPlayRecording(speed: Float) {
         val player = exoPlayer ?: return
         HtspLog.i { "Recording trick play x$speed" }
+        tunnelRestoreJob?.cancel()
         player.playWhenReady = false
+        fadeBackPending = switchTunnelingFaded(player, false)
         val anchorClock = SystemClock.elapsedRealtime()
         val anchorPos = player.currentPosition
         while (currentCoroutineContext().isActive) {
@@ -736,11 +762,11 @@ class HtspTvInputSession(
             val target = anchorPos + (speed * (SystemClock.elapsedRealtime() - anchorClock)).toLong()
             val duration = player.duration
             when {
-                target <= 0 -> { player.seekTo(0); player.playWhenReady = true; return }
+                target <= 0 -> { player.seekTo(0); player.playWhenReady = true; restoreTunnelingWhenReady(player); return }
                 duration != C.TIME_UNSET && target >= duration -> {
-                    player.seekTo(duration); player.playWhenReady = true; return
+                    player.seekTo(duration); player.playWhenReady = true; restoreTunnelingWhenReady(player); return
                 }
-                else -> player.seekTo(target)
+                else -> stepWithFade { player.seekTo(target) }
             }
         }
     }
@@ -807,6 +833,93 @@ class HtspTvInputSession(
     private fun stopTrickPlay() {
         trickJob?.cancel()
         trickJob = null
+        if (fadeBackPending) { fadeBackPending = false; fade(0f, FADE_OUT_MS) }
+    }
+
+    /** Tunneling setting of the current player (settings option). */
+    private var tunnelingPref = false
+
+    @Volatile private var frameSignal: CompletableDeferred<Unit>? = null
+
+    /** Runs [trigger] and waits (at most [FIRST_FRAME_WAIT_MS]) for the next picture the player renders. */
+    private suspend fun awaitFirstFrame(trigger: suspend () -> Unit) {
+        val signal = CompletableDeferred<Unit>()
+        frameSignal = signal
+        trigger()
+        withTimeoutOrNull(FIRST_FRAME_WAIT_MS) { signal.await() }
+        frameSignal = null
+    }
+
+    /**
+     * Tunneled video is only presented by the hardware while the player plays, so the repeated
+     * seeks of rewind / fast forward would show no new picture. Trick play therefore runs without
+     * tunneling; [endTrickPlay] switches it back on. The switch re-creates the codec (the screen
+     * would go black), so it is hidden behind a fade through black. Returns false if tunneling
+     * already has the requested state.
+     */
+    private suspend fun switchTunnelingFaded(player: ExoPlayer, enabled: Boolean): Boolean {
+        val selector = player.trackSelector as? DefaultTrackSelector ?: return false
+        if (!tunnelingPref || selector.parameters.tunnelingEnabled == enabled) return false
+        fade(1f, FADE_IN_MS)
+        var done = false
+        try {
+            delay(FADE_IN_MS)
+            HtspLog.i { "Tunneling ${if (enabled) "on" else "off"} (trick play)" }
+            // the first step must not flush the new codec before it showed a picture
+            awaitFirstFrame { selector.setParameters(selector.buildUponParameters().setTunnelingEnabled(enabled)) }
+            done = true
+        } finally {
+            if (!done) fade(0f, FADE_OUT_MS) // cancelled: do not leave the screen black
+        }
+        return true
+    }
+
+    /** Tunneling was switched off for rewind / fast forward: the screen stays black until the first step's picture. */
+    private var fadeBackPending = false
+
+    private suspend fun stepWithFade(seek: suspend () -> Unit) {
+        if (!fadeBackPending) { seek(); return }
+        fadeBackPending = false
+        try {
+            awaitFirstFrame(seek)
+        } finally {
+            fade(0f, FADE_OUT_MS)
+        }
+    }
+
+    /** Back to normal playback: stop trick play and restore tunneling. */
+    private fun endTrickPlay() {
+        stopTrickPlay()
+        exoPlayer?.let { restoreTunnelingWhenReady(it) }
+    }
+
+    private var tunnelRestoreJob: Job? = null
+
+    /**
+     * Switching tunneling back on re-creates the codec, which blanks the screen. After the last
+     * seek the player first has to buffer again (still picture meanwhile), so the switch waits
+     * until the player is READY.
+     */
+    private fun restoreTunnelingWhenReady(player: ExoPlayer) {
+        if (!tunnelingPref) return
+        if ((player.trackSelector as? DefaultTrackSelector)?.parameters?.tunnelingEnabled != false) return // not switched off
+        tunnelRestoreJob?.cancel()
+        tunnelRestoreJob = sessionScope.launch {
+            val ready = CompletableDeferred<Unit>()
+            val listener = object : Player.Listener {
+                override fun onPlaybackStateChanged(state: Int) {
+                    if (state == Player.STATE_READY) ready.complete(Unit)
+                }
+            }
+            player.addListener(listener)
+            try {
+                if (player.playbackState == Player.STATE_READY) ready.complete(Unit)
+                withTimeoutOrNull(TUNNEL_RESTORE_WAIT_MS) { ready.await() }
+            } finally {
+                player.removeListener(listener)
+            }
+            if (exoPlayer === player && switchTunnelingFaded(player, true)) fade(0f, FADE_OUT_MS)
+        }
     }
 
     /** Wall-clock position -> subscriptionSeek -> wait for subscriptionSkip -> player seek. */
@@ -966,7 +1079,7 @@ class HtspTvInputSession(
                 handled = count
                 aspectEpoch++
                 HtspLog.i { "Stream restart (subscriptionStart #$count), re-preparing player" }
-                stopTrickPlay()
+                endTrickPlay()
                 seekJob?.cancel()
                 awaitingFirstPacket = true
                 val source = buildMediaSource(sub)
@@ -995,6 +1108,8 @@ class HtspTvInputSession(
     }
 
     private fun releasePlayerAndSubscription() {
+        fadeView?.animate()?.cancel()
+        fadeView?.alpha = 0f
         aspectEpoch++
         statsJob?.cancel()
         statsJob = null
@@ -1010,6 +1125,8 @@ class HtspTvInputSession(
         timeshiftAnnounced = false
         tuneJob?.cancel()
         tuneJob = null
+        tunnelRestoreJob?.cancel()
+        tunnelRestoreJob = null
         // Clear the field first: ExoPlayer reports a release timeout as player error from inside
         // release(); the listener below ignores errors of players that are no longer current.
         val oldPlayer = exoPlayer
@@ -1034,6 +1151,13 @@ class HtspTvInputSession(
         const val ASPECT_WAIT_MAX_MS = 15_000L
         /** Interval between trick-play seeks (own choice, pvr.hts leaves this to Kodi's player). */
         const val TRICK_STEP_MS = 500L
+        /** Max wait for a picture after the codec was re-created (tunneling switch) or a step was seeked */
+        const val FIRST_FRAME_WAIT_MS = 1_500L
+        /** Fade through black while the codec is re-created: to black / back to the picture */
+        const val FADE_IN_MS = 150L
+        const val FADE_OUT_MS = 250L
+        /** Max wait for READY before tunneling is switched back on after trick play */
+        const val TUNNEL_RESTORE_WAIT_MS = 5_000L
         /** Rewind/fast forward: loading state only if the picture of a step is this late */
         const val TRICK_BUFFERING_DELAY_MS = 600L
         /** Resume: loading state only if no frame is rendered within this time */
